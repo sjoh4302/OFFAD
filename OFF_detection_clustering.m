@@ -63,17 +63,20 @@ filenameVS=['Data_',provider,'\',mousename,'_',BLdate,'_',LightPhase,'_',derivat
 load([pathinVS,filenameVS,'.mat'],'-mat','nr');
 
 % find NREM episodes
-gaps=find(diff(nr)>1); %find last epoch of each episode
-numepi=length(gaps); %number of NREM episodes (-1 because last epoch doesn't end with a gap)
+endEpi=find(diff(nr)>1); %find last epoch of each episode
+endEpi=[endEpi;length(nr)]; %add final episode end
+startEpi=find(diff(nr)>1)+1; %find first epoch of each episode
+startEpi=[1;startEpi]; %add first episode start
+numepi=length(startEpi); %number of NREM episodes
 cleanepochs=[];
 
-%loop going through all NREM episodes (except for first and last)
-for ep = 2:numepi
+%loop going through all NREM episodes 
+for ep = 1:numepi
     
-    Startepoch=nr(gaps(ep-1)+2); %find start epoch of this NREM episode
-    Endepoch=nr(gaps(ep))-1; %find second last epoch of this NREM episode
+    Startepoch=nr(startEpi(ep)); %find start epoch of this NREM episode
+    Endepoch=nr(endEpi(ep)); %find second last epoch of this NREM episode
     
-    if Endepoch-Startepoch<3 %if NREM episode 2 epochs or shorter, there'll be no signal because w're cutting the first and last epoch
+    if Endepoch-Startepoch<2 %if NREM episode 2 epochs or shorter, there'll be no signal because we're cutting the first and last epoch (i.e. state transitions)
         continue
     else %if NREM episode at least 3 epochs, find bins corresponding to the start of the second epoch and end of the second last epoch
         cleanepochs=[cleanepochs; Startepoch Endepoch];
@@ -120,7 +123,7 @@ for chan = AllChannels(1):AllChannels(end)
             
             %fill NaN vectors with pNe signal for this NREM episode
             StartBin=ceil(Startepoch*epochlength*fs);
-            EndBin=floor(Endepoch*epochlength*fs);
+            EndBin=floor((Endepoch-1)*epochlength*fs);
             NremSig(StartBin:EndBin)=sig(StartBin:EndBin);
             
         end
