@@ -309,14 +309,14 @@ end
 %%
 fs_lfp=256;
 midOFFperiod=OFFperiod(:,1)+diff(OFFperiod,1,2)/2;
-LFPlengthOFFperiod=diff(OFFperiod,1,2)/(1/fs_lfp);
-longOFFperiod=find(LFPlengthOFFperiod>1);
-%trueOFFperiods=diff(OFFperiod,1,2)>0.03;
+LFPlengthOFFperiod=floor(diff(OFFperiod,1,2)/(1/fs_lfp));
+longOFFperiods=find(LFPlengthOFFperiod>1);
+
 centeredOFFperiods=zeros(1,31);
 numOFFPsamp=1000;
 for i = 1:numOFFPsamp
-    selectOP=randi(length(midOFFperiod));
-    [~,LFPmid]=min(abs(timeLFP-midOFFperiod(selectOP)));
+    selectOP=randi(length(longOFFperiods));
+    [~,LFPmid]=min(abs(timeLFP-longOFFperiods(selectOP)));
     centeredOFFperiods=centeredOFFperiods+LFP_ch8(LFPmid-15:LFPmid+15)/numOFFPsamp;    
 end
 figure

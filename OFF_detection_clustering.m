@@ -60,8 +60,8 @@ pathinVS=[path,'TestSignals\']; %path for VS files
 
 %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
 filenameVS=['Data_',provider,'\',mousename,'_',BLdate,'_',LightPhase,'_',derivation,'_VSspec'];
-load([pathinVS,filenameVS,'.mat'],'-mat','w');
-nr=w;
+load([pathinVS,filenameVS,'.mat'],'-mat','nr');
+%nr=w;
 
 % find NREM episodes
 endEpi=find(diff(nr)>1); %find last epoch of each episode
@@ -278,13 +278,13 @@ clusterIDX_total=ones(length(NremSig),1);
 clusterIDX_total(cluster_two_total)=2;
 
 %%%% Show example of final thresholding 
-%figure(5)
+%figure
 %plot(cluster_one_total,NremSig(cluster_one_total),'.')
 %hold on
 %plot(cluster_two_total,NremSig(cluster_two_total),'.')
 
 %Find all OFF periods
-OFFgaps=find(diff(cluster_one_total)>1); %find last epoch of each episode
+OFFgaps=find(diff(NremTime(cluster_one_total))>(1/floor(fs))); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
 OFFperiod=[];
 
