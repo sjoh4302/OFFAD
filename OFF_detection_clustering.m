@@ -1,9 +1,9 @@
 % 
 clear all
-close all
+%close all
 tic
 %% Intialise variables
-for x=1:4
+for x=1%:4
 if x==1
 %%% Recording information 1
 provider='Lukas';%'Mathilde';
@@ -12,7 +12,7 @@ mousename='MH';%'Ph';
 BLdate='20190217';%'200318';
 LightPhase='DL';%'L' %(light period)
 AllChannels=[1:8];
-GoodChannels=[1:8]; %select which channels to analyse
+GoodChannels=[8]; %select which channels to analyse
 fs=498.2462; %sampling rate of the pNe signal
 epochlength=4; %vigilance state scoring in 4s epochs
 elseif x==2
@@ -60,7 +60,8 @@ pathinVS=[path,'TestSignals\']; %path for VS files
 
 %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
 filenameVS=['Data_',provider,'\',mousename,'_',BLdate,'_',LightPhase,'_',derivation,'_VSspec'];
-load([pathinVS,filenameVS,'.mat'],'-mat','nr');
+load([pathinVS,filenameVS,'.mat'],'-mat','w');
+nr=w;
 
 % find NREM episodes
 endEpi=find(diff(nr)>1); %find last epoch of each episode
@@ -109,12 +110,13 @@ for chan = AllChannels(1):AllChannels(end)
         
         sig=abs(sig); %take absolute values
           
-        
+        timeSig=[1/fs:1/fs:length(sig)/fs];
         
         
         %%% collect pNe signal for all NREM episodes
         NremSig=NaN(1,length(sig)); %NaN vectors to be filled with NREM pNe signal
-        
+        NremTime=NaN(1,length(sig)); %NaN vectors to be filled with recording time values
+         
         %loop going through all NREM epochs (except for first and last)
         for ep = 1:numepochs
             
@@ -125,10 +127,12 @@ for chan = AllChannels(1):AllChannels(end)
             StartBin=ceil(Startepoch*epochlength*fs);
             EndBin=floor((Endepoch-1)*epochlength*fs);
             NremSig(StartBin:EndBin)=sig(StartBin:EndBin);
+            NremTime(StartBin:EndBin)=timeSig(StartBin:EndBin);
             
         end
         %concatenate the signal from all selected NREM episodes to get rid of gaps
         NremSig=NremSig(~isnan(NremSig));
+        NremTime=NremTime(~isnan(NremTime));
         
         
     end
@@ -147,7 +151,9 @@ smoothNremSig=smoothNremSig(15:end-15);
 percOverlap=10; %overlap between segments
 LB_freq=40; %find signal power from 0-LB-freq
 [scalogramWT,F] = offPeriodScalogram(NremSig,fs,percOverlap,LB_freq);
-
+%winSize=10; %in data points 5 for Lukas
+%smoothNremSig10=conv(NremSig,gausswin(winSize))';
+%scalogramWT=smoothNremSig10(5:end-5)';
 
 %% Spectral clustering (3 clusters)
 %tic
@@ -156,7 +162,7 @@ plotting=0; %0 = dont plot, 1 = plot
 
 %Extracts a 30s sample of NREM recording and perfroms spectral clustering
 sampleLength=30; %in seconds
-percSamp=10; %percentage of signal to sample for cluster thresholding
+percSamp=1; %percentage of signal to sample for cluster thresholding
 numSamp=round(((length(NremSig)/fs)/sampleLength)*(percSamp/100)); 
 color = lines(3);
 sampSize=round(fs*sampleLength);
@@ -294,16 +300,16 @@ for ep = 1:numOFF
         StartOFF=cluster_one_total(OFFgaps(ep-1)+1); %find start point of this OFF period
         EndOFF=cluster_one_total(OFFgaps(ep)); %find last point of this OFF period
     end
-    OFFperiod=[OFFperiod; StartOFF EndOFF];
+    OFFperiod=[OFFperiod; NremTime(StartOFF) NremTime(EndOFF)];
     clear startOFF endOFF
     
 end
 savename=[pathinVS,'Data_',provider,'\','OFFperiod_',mousename,'_',BLdate,'_',LightPhase,'_Channel',num2str(chan),'_1%'];       
-save(savename,'OFFperiod','allSampleThresholds')
+%save(savename,'OFFperiod','allSampleThresholds')
 
-clearvars -except provider derivation mousename BLdate LightPhase ...
-    AllChannels GoodChannels fs epochlength path pathinPNE pathinVS ...
-    filenameVS gaps numepi cleanepochs Startepoch Endepoch nr numepochs
+%clearvars -except provider derivation mousename BLdate LightPhase ...
+%    AllChannels GoodChannels fs epochlength path pathinPNE pathinVS ...
+%    filenameVS gaps numepi cleanepochs Startepoch Endepoch nr numepochs
 end
 end
 

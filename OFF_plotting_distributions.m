@@ -269,4 +269,69 @@ for i = 1:length(SegIN)
     else
         plot(startSegIN*(1/fs_pne):(1/fs_pne):endSegIN*(1/fs_pne),NremPNE(startSegIN:endSegIN),'k')
     end   
-end    
+end
+
+
+%%%%% Compare pNe and LFP off periods from time signiature
+timeLFP=[1/256:1/256:length(sig)/256];
+load('D:\DPhil\Off-period detection\TestSignals\Data_Lukas\MH-LFP-20190217-ch8.mat','sig')
+LFP_ch8=bandpass(sig,[0.5,30],256);
+rawsig=load([pathinVS,filename,'.mat'],'-mat',['Ch',num2str(chan)]);
+rawsig = rawsig.(['Ch',num2str(chan)]);
+figure; plot(timeSig(find(timeSig>732&timeSig<738)),rawsig(find(timeSig>732&timeSig<738)));
+hold on
+for i = 1:17
+plot(timeSig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),rawsig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),'r')
+end
+figure; plot(timeLFP(find(timeLFP>732&timeLFP<738)),LFP_ch8(find(timeLFP>732&timeLFP<738)));
+hold on
+for i = 1:17
+plot(timeLFP(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),LFP_ch8(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),'r')
+end
+
+%%%%
+%%%%% Compare pNe and LFP off periods from time signiature
+timeLFP=[1/256:1/256:length(sig)/256];
+load('D:\DPhil\Off-period detection\TestSignals\Data_Lukas\MH-LFP-20190217-ch8.mat','sig')
+LFP_ch8=bandpass(sig,[0.5,30],256);
+rawsig=load([pathinVS,filename,'.mat'],'-mat',['Ch',num2str(chan)]);
+rawsig = rawsig.(['Ch',num2str(chan)]);
+figure; plot(timeSig(find(timeSig>710&timeSig<715)),rawsig(find(timeSig>710&timeSig<715)));
+hold on
+for i = 3302:3326
+plot(timeSig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),rawsig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),'r')
+end
+figure; plot(timeLFP(find(timeLFP>710&timeLFP<715)),LFP_ch8(find(timeLFP>710&timeLFP<715)));
+hold on
+for i = 3302:3326
+plot(timeLFP(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),LFP_ch8(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),'r')
+end
+%%
+fs_lfp=256;
+midOFFperiod=OFFperiod(:,1)+diff(OFFperiod,1,2)/2;
+LFPlengthOFFperiod=diff(OFFperiod,1,2)/(1/fs_lfp);
+longOFFperiod=find(LFPlengthOFFperiod>1);
+%trueOFFperiods=diff(OFFperiod,1,2)>0.03;
+centeredOFFperiods=zeros(1,31);
+numOFFPsamp=1000;
+for i = 1:numOFFPsamp
+    selectOP=randi(length(midOFFperiod));
+    [~,LFPmid]=min(abs(timeLFP-midOFFperiod(selectOP)));
+    centeredOFFperiods=centeredOFFperiods+LFP_ch8(LFPmid-15:LFPmid+15)/numOFFPsamp;    
+end
+figure
+plot(centeredOFFperiods)
+
+
+
+%
+OFFcat=[];
+for i = 1:length(OFFperiod_ch2)
+    OFFcat=[OFFcat,[OFFperiod_ch2(i,1):OFFperiod_ch2(i,2)]];
+end
+
+OFFcat9=[];
+for i = 1:18732
+    OFFcat9=[OFFcat9,[OFFperiod_ch9(i,1):OFFperiod_ch9(i,2)]];
+end
+cc=intersect(OFFcat,OFFcat9);
