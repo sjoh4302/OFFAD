@@ -280,12 +280,12 @@ rawsig=load([pathinVS,filename,'.mat'],'-mat',['Ch',num2str(chan)]);
 rawsig = rawsig.(['Ch',num2str(chan)]);
 figure; plot(timeSig(find(timeSig>732&timeSig<738)),rawsig(find(timeSig>732&timeSig<738)));
 hold on
-for i = 1:17
+for i = 1:64
 plot(timeSig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),rawsig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),'r')
 end
 figure; plot(timeLFP(find(timeLFP>732&timeLFP<738)),LFP_ch8(find(timeLFP>732&timeLFP<738)));
 hold on
-for i = 1:17
+for i = 1:64
 plot(timeLFP(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),LFP_ch8(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),'r')
 end
 
@@ -296,14 +296,14 @@ load('D:\DPhil\Off-period detection\TestSignals\Data_Lukas\MH-LFP-20190217-ch8.m
 LFP_ch8=bandpass(sig,[0.5,30],256);
 rawsig=load([pathinVS,filename,'.mat'],'-mat',['Ch',num2str(chan)]);
 rawsig = rawsig.(['Ch',num2str(chan)]);
-figure; plot(timeSig(find(timeSig>710&timeSig<715)),rawsig(find(timeSig>710&timeSig<715)));
+figure; plot(timeSig(find(timeSig>9666&timeSig<9670)),rawsig(find(timeSig>9666&timeSig<9670)));
 hold on
-for i = 3302:3326
-plot(timeSig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),rawsig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),'r')
+for i = 22445:22470
+    plot(timeSig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),rawsig(find(timeSig>OFFperiod(i,1)&timeSig<OFFperiod(i,2))),'r')
 end
-figure; plot(timeLFP(find(timeLFP>710&timeLFP<715)),LFP_ch8(find(timeLFP>710&timeLFP<715)));
+figure; plot(timeLFP(find(timeLFP>9666&timeLFP<9670)),LFP_ch8(find(timeLFP>9666&timeLFP<9670)));
 hold on
-for i = 3302:3326
+for i = 22445:22470
 plot(timeLFP(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),LFP_ch8(find(timeLFP>OFFperiod(i,1)&timeLFP<OFFperiod(i,2))),'r')
 end
 %%
@@ -314,12 +314,15 @@ longOFFperiods=find(LFPlengthOFFperiod>1);
 
 centeredOFFperiods=zeros(1,31);
 numOFFPsamp=1000;
+%figure
 for i = 1:numOFFPsamp
     selectOP=randi(length(longOFFperiods));
-    [~,LFPmid]=min(abs(timeLFP-longOFFperiods(selectOP)));
+    [~,LFPmid]=min(abs(timeLFP-midOFFperiod(longOFFperiods(selectOP))));
     centeredOFFperiods=centeredOFFperiods+LFP_ch8(LFPmid-15:LFPmid+15)/numOFFPsamp;    
+%plot(LFP_ch8(LFPmid-15:LFPmid+15))
+%hold on
 end
-figure
+
 plot(centeredOFFperiods)
 
 

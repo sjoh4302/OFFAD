@@ -12,7 +12,7 @@ mousename='MH';%'Ph';
 BLdate='20190217';%'200318';
 LightPhase='DL';%'L' %(light period)
 AllChannels=[1:8];
-GoodChannels=[8]; %select which channels to analyse
+GoodChannels=[1]; %select which channels to analyse
 fs=498.2462; %sampling rate of the pNe signal
 epochlength=4; %vigilance state scoring in 4s epochs
 elseif x==2
