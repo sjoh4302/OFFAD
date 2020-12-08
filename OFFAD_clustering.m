@@ -3,6 +3,18 @@ function [OFFDATA]=OFFAD_clustering(importDataVar)
 g.Main = findobj('tag', 'OFFAD_IMPORT');
 set(g.Main,'Visible','off')
 
+%Plotting
+g.Clustering = figure('Units','points', ...
+... %	'Colormap','gray', ...
+	'PaperPosition',[18 180 576/2 432], ...
+	'PaperUnits','points', ...
+	'name', 'OFFAD (OFF_period Automated Detection)', ... 
+	'numbertitle', 'off', ...
+	'Position',[200 300 700 100], ...
+    'Toolbar','none',...
+    'Menubar','none',...
+	'Tag','OFFAD_CLUSTER');
+
 % Extract import information from OFFAD_importdata
 importDataVar=importDataVar(end:-1:1);
 datasetname=importDataVar(2).String;
@@ -85,7 +97,7 @@ for chanNum = 1:length(channelNums)
         PNE = PNE.(chan);
         
         PNE = abs(PNE); %take absolute values
-          
+       % PNE = PNE(1  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
         timePNE=[1/PNEfs:1/PNEfs:length(PNE)/PNEfs];
         
         
@@ -203,7 +215,7 @@ OFFgaps=find(diff(vsPNEtime(OFF_clust_points))>(1/floor(PNEfs))); %find last epo
 numOFF=length(OFFgaps); %number of OFF periods
 OFFperiod=[];
 %loop going through all OFF periods
-for ep = 1:1000%numOFF
+for ep = 1:numOFF
     if ep==1
         StartOFF=OFF_clust_points(1); %find start point of this OFF period
         EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
@@ -229,7 +241,6 @@ end
 end
 end
 
-% Compare signals
 
 
 %% Function used to optimise thresholds
