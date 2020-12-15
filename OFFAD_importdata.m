@@ -1,4 +1,5 @@
 function [OFFDATA]=OFFAD_importdata
+OFFDATA=[];
 
 %Settings
 numLine=9;
@@ -258,7 +259,7 @@ uicontrol(g.Import,'Style', 'text','String','%',...
 uicontrol(g.Import,'Style', 'pushbutton','String','Done',...
     'FontWeight','bold','FontSize',12,...
     'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
-    'Position',[0.75 centres(9)-boxHeighthhalf 0.2 boxHeighthhalf*2],'Callback','OFFDATA=OFFAD_clustering([findobj(''parent'',gcbf,''type'', ''UIControl'')])');
+    'Position',[0.75 centres(9)-boxHeighthhalf 0.2 boxHeighthhalf*2],'Callback','[OFFDATA,OFFDATA_var]=OFFAD_clustering([findobj(''parent'',gcbf,''type'', ''UIControl'')]);');
 
 
 
@@ -266,4 +267,3 @@ g.Main = findobj('tag', 'OFFAD');
 set(g.Main,'Visible','off')
  
  
- OFFDATA=[];

@@ -1,7 +1,7 @@
-function [OFFDATA]=OFFAD_clustering(importDataVar)
+function [OFFDATA,OFFDATA_var]=OFFAD_clustering(importDataVar)
 
-g.Main = findobj('tag', 'OFFAD_IMPORT');
-set(g.Main,'Visible','off')
+g.Import = findobj('tag', 'OFFAD_IMPORT');
+set(g.Import,'Visible','off')
 
 %Plotting
 g.Clustering = figure('Units','points', ...
@@ -14,27 +14,34 @@ g.Clustering = figure('Units','points', ...
     'Toolbar','none',...
     'Menubar','none',...
 	'Tag','OFFAD_CLUSTER');
+uicontrol(g.Clustering,'Style', 'text','String','Warning: Clustering in progress',...
+    'FontWeight','bold','FontSize',22,...
+    'Units','normalized',...
+    'Position',[0.2 0.2 0.6 0.6]);
+
+drawnow 
 
 % Extract import information from OFFAD_importdata
+OFFDATA_var=[];
 importDataVar=importDataVar(end:-1:1);
-datasetname=importDataVar(2).String;
-VSpathin=importDataVar(4).String;
-epochLen=double(string(importDataVar(7).String));
-PNEpathin=importDataVar(9).String;
-PNEfs=double(string(importDataVar(12).String));
-PNEunits=importDataVar(14).String;
-LFPpathin=importDataVar(16).String;
-LFPfs=double(string(importDataVar(19).String));
-LFPunit=importDataVar(21).String;
-selectStages=[importDataVar(24).Value,...      
+OFFDATA_var.datasetname=importDataVar(2).String;
+OFFDATA_var.VSpathin=importDataVar(4).String;
+OFFDATA_var.epochLen=double(string(importDataVar(7).String));
+OFFDATA_var.PNEpathin=importDataVar(9).String;
+OFFDATA_var.PNEfs=double(string(importDataVar(12).String));
+OFFDATA_var.PNEunits=importDataVar(14).String;
+OFFDATA_var.LFPpathin=importDataVar(16).String;
+OFFDATA_var.LFPfs=double(string(importDataVar(19).String));
+OFFDATA_var.LFPunit=importDataVar(21).String;
+OFFDATA_var.selectStages=[importDataVar(24).Value,...      
               importDataVar(26).Value,...
               importDataVar(28).Value];
-ignoreChannels=importDataVar(30).String;
-clustVar1Select=double(string(importDataVar(32).Value)); %1 = amplitude, 2=power
-clustVar1Smooth=double(string(importDataVar(34).String));
-clustVar2Select=double(string(importDataVar(35).Value)); %1 = amplitude, 2=power
-clustVar2Smooth=double(string(importDataVar(37).String));
-percSamp=double(string(importDataVar(39).String)); %percentage of signal to sample for cluster thresholding
+OFFDATA_var.ignoreChannels=double(string(regexp(importDataVar(30).String,'\d*','match')));
+OFFDATA_var.clustVar1Select=double(string(importDataVar(32).Value)); %1 = amplitude, 2=power
+OFFDATA_var.clustVar1Smooth=double(string(importDataVar(34).String));
+OFFDATA_var.clustVar2Select=double(string(importDataVar(35).Value)); %1 = amplitude, 2=power
+OFFDATA_var.clustVar2Smooth=double(string(importDataVar(37).String));
+OFFDATA_var.percSamp=double(string(importDataVar(39).String)); %percentage of signal to sample for cluster thresholding
 
 %Create empty directory to hold clustering information
 OFFDATA=[];
@@ -42,14 +49,14 @@ OFFDATA=[];
 %%%%% Perform clustering
 %Choose stage to analyse
 allstages=["nr","r","w"];
-stages=allstages(logical(selectStages));
+stages=allstages(logical(OFFDATA_var.selectStages));
 for stageNum=1:length(stages)
 stage=stages(stageNum);
 %% collect bin number for start and end of each NREM epoch
 % cutting off one 4 second epoch at the beginning and end of each episode to exclude transitional states
 
 %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
-vigState = load(VSpathin,'-mat',stage);
+vigState = load(OFFDATA_var.VSpathin,'-mat',stage);
 vigState = vigState.(stage);
 
 % find NREM episodes
@@ -83,22 +90,30 @@ numepochs=length(cleanepochs);
 2) Extract and concatenate NREM episodes only
 %}
 
-exampleObject = matfile(PNEpathin);
+exampleObject = matfile(OFFDATA_var.PNEpathin);
 channelNums = who(exampleObject);
+%Sort channels
+numOnly=double(string(regexp(string(channelNums),'\d*','match')));
+[chanOrderNums,chanOrder]=sort(numOnly);
+%Remove selected channels
+if ~isempty(OFFDATA_var.ignoreChannels)
+    chanOrder=(chanOrder(~abs(sum(chanOrderNums==OFFDATA_var.ignoreChannels,2))));
+end
 clear exampleObject
 
-for chanNum = 1:length(channelNums)
-    chan=string(channelNums(chanNum));    
+
+for chanNum = 1:length(chanOrder)
+    chan=string(channelNums(chanOrder(chanNum)));    
     
     %skip channel if it's not a good channel (was excluded on visual inspection due to bad signals)
             
         %%% load pNe signal
-        PNE = load(PNEpathin,'-mat',chan);
+        PNE = load(OFFDATA_var.PNEpathin,'-mat',chan);
         PNE = PNE.(chan);
         
         PNE = abs(PNE); %take absolute values
-       % PNE = PNE(1  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
-        timePNE=[1/PNEfs:1/PNEfs:length(PNE)/PNEfs];
+        %PNE = PNE(1:1000000);  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
+        timePNE=[1/OFFDATA_var.PNEfs:1/OFFDATA_var.PNEfs:length(PNE)/OFFDATA_var.PNEfs];
         
         
         %%% collect pNe signal for all episodes of chosen vigilance state
@@ -112,16 +127,18 @@ for chanNum = 1:length(channelNums)
             Endepoch=cleanepochs(ep,2); %end of respective epoch
             
             %fill NaN vectors with pNe signal for this NREM episode
-            StartBin=ceil(Startepoch*epochLen*PNEfs);
-            EndBin=floor((Endepoch-1)*epochLen*PNEfs);
-            vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
-            vsPNEtime(StartBin:EndBin)=timePNE(StartBin:EndBin);
+            StartBin=ceil(Startepoch*OFFDATA_var.epochLen*OFFDATA_var.PNEfs);
+            EndBin=floor((Endepoch-1)*OFFDATA_var.epochLen*OFFDATA_var.PNEfs);
+            try
+                vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
+                vsPNEtime(StartBin:EndBin)=timePNE(StartBin:EndBin);
+            end
             
         end
         %concatenate the signal from all selected NREM episodes to get rid of gaps
         vsPNE=vsPNE(~isnan(vsPNE));
         vsPNEtime=vsPNEtime(~isnan(vsPNEtime));
-        
+        clear PNE
         
     
 %end
@@ -130,8 +147,8 @@ for chanNum = 1:length(channelNums)
 
 %% Data processing
 %%%Cluster 1
-if clustVar1Select==1
-    winSize=clustVar1Smooth;
+if OFFDATA_var.clustVar1Select==1
+    winSize=OFFDATA_var.clustVar1Smooth;
     clusterVar1=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar1=clusterVar1(winSize/2:end-winSize/2);
@@ -139,16 +156,16 @@ if clustVar1Select==1
         clusterVar1=clusterVar1(ceil(winSize/2):floor(winSize/2));
     end
     clear winSize
-elseif clustVar1Select==2
+elseif OFFDATA_var.clustVar1Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar1,F] = offPeriodScalogram(vsPNE,PNEfs,percOverlap,LB_freq);
+    [clusterVar1,F] = offPeriodScalogram(vsPNE,OFFDATA_var.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
 %%%Cluster 2
-if clustVar2Select==1
-    winSize=clustVar2Smooth;
+if OFFDATA_var.clustVar2Select==1
+    winSize=OFFDATA_var.clustVar2Smooth;
     clusterVar2=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar2=clusterVar2(winSize/2:end-winSize/2);
@@ -156,20 +173,20 @@ if clustVar2Select==1
         clusterVar2=clusterVar2(ceil(winSize/2):floor(winSize/2));
     end
     clear winSize
-elseif clustVar2Select==2
+elseif OFFDATA_var.clustVar2Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar2,F] = offPeriodScalogram(vsPNE,PNEfs,percOverlap,LB_freq);
+    [clusterVar2,F] = offPeriodScalogram(vsPNE,OFFDATA_var.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
 %% Spectral clustering (3 clusters)
 %Extracts 30s samples of recording and perfroms spectral clustering
 sampleLength=30; %in seconds
-totalSamp=floor(((length(vsPNE)/PNEfs)/sampleLength));
-sampSize=round(PNEfs*sampleLength);
+totalSamp=floor(((length(vsPNE)/OFFDATA_var.PNEfs)/sampleLength));
+sampSize=round(OFFDATA_var.PNEfs*sampleLength);
 sampStarts=([0:1:totalSamp-1]*sampSize)+1;
-numSamp=round(totalSamp*(percSamp/100));
+numSamp=round(totalSamp*(OFFDATA_var.percSamp/100));
 color = lines(3);
 sampStarts=sampStarts(randsample(length(sampStarts),numSamp));
 
@@ -211,7 +228,7 @@ clusterIDX_total=ones(length(vsPNE),1);
 clusterIDX_total(ON_clust_points)=2;
 
 %%%%% Find all OFF periods
-OFFgaps=find(diff(vsPNEtime(OFF_clust_points))>(1/floor(PNEfs))); %find last epoch of each episode
+OFFgaps=find(diff(vsPNEtime(OFF_clust_points))>(1/floor(OFFDATA_var.PNEfs))); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
 OFFperiod=[];
 %loop going through all OFF periods
@@ -238,9 +255,13 @@ try
     OFFDATA.(chan).AllOFFtimes=[OFFDATA.(chan).AllOFFtimes,OFF_clust_points];
 end
 
+clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
+      clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled
+
 end
 end
 
+[OFFDATA]=OFFAD_channelstats(OFFDATA,OFFDATA_var);
 
 
 %% Function used to optimise thresholds
