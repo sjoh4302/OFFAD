@@ -1,4 +1,4 @@
-function [OFFDATA,OFFDATA_var]=OFFAD_clustering(importDataVar)
+function [OFFDATA]=OFFAD_clustering(importDataVar)
 
 g.Import = findobj('tag', 'OFFAD_IMPORT');
 set(g.Import,'Visible','off')
@@ -21,42 +21,40 @@ uicontrol(g.Clustering,'Style', 'text','String','Warning: Clustering in progress
 
 drawnow 
 
-% Extract import information from OFFAD_importdata
-OFFDATA_var=[];
-importDataVar=importDataVar(end:-1:1);
-OFFDATA_var.datasetname=importDataVar(2).String;
-OFFDATA_var.VSpathin=importDataVar(4).String;
-OFFDATA_var.epochLen=double(string(importDataVar(7).String));
-OFFDATA_var.PNEpathin=importDataVar(9).String;
-OFFDATA_var.PNEfs=double(string(importDataVar(12).String));
-OFFDATA_var.PNEunits=importDataVar(14).String;
-OFFDATA_var.LFPpathin=importDataVar(16).String;
-OFFDATA_var.LFPfs=double(string(importDataVar(19).String));
-OFFDATA_var.LFPunit=importDataVar(21).String;
-OFFDATA_var.selectStages=[importDataVar(24).Value,...      
-              importDataVar(26).Value,...
-              importDataVar(28).Value];
-OFFDATA_var.ignoreChannels=double(string(regexp(importDataVar(30).String,'\d*','match')));
-OFFDATA_var.clustVar1Select=double(string(importDataVar(32).Value)); %1 = amplitude, 2=power
-OFFDATA_var.clustVar1Smooth=double(string(importDataVar(34).String));
-OFFDATA_var.clustVar2Select=double(string(importDataVar(35).Value)); %1 = amplitude, 2=power
-OFFDATA_var.clustVar2Smooth=double(string(importDataVar(37).String));
-OFFDATA_var.percSamp=double(string(importDataVar(39).String)); %percentage of signal to sample for cluster thresholding
-
 %Create empty directory to hold clustering information
 OFFDATA=[];
+%Add input variable from OFFAD_importdata
+importDataVar=importDataVar(end:-1:1);
+OFFDATA.datasetname=importDataVar(2).String;
+OFFDATA.VSpathin=importDataVar(4).String;
+OFFDATA.epochLen=double(string(importDataVar(7).String));
+OFFDATA.PNEpathin=importDataVar(9).String;
+OFFDATA.PNEfs=double(string(importDataVar(12).String));
+OFFDATA.PNEunits=importDataVar(14).String;
+OFFDATA.LFPpathin=importDataVar(16).String;
+OFFDATA.LFPfs=double(string(importDataVar(19).String));
+OFFDATA.LFPunit=importDataVar(21).String;
+OFFDATA.selectStages=[importDataVar(24).Value,...      
+              importDataVar(26).Value,...
+              importDataVar(28).Value];
+OFFDATA.ignoreChannels=double(string(regexp(importDataVar(30).String,'\d*','match')));
+OFFDATA.clustVar1Select=double(string(importDataVar(32).Value)); %1 = amplitude, 2=power
+OFFDATA.clustVar1Smooth=double(string(importDataVar(34).String));
+OFFDATA.clustVar2Select=double(string(importDataVar(35).Value)); %1 = amplitude, 2=power
+OFFDATA.clustVar2Smooth=double(string(importDataVar(37).String));
+OFFDATA.percSamp=double(string(importDataVar(39).String)); %percentage of signal to sample for cluster thresholding
 
 %%%%% Perform clustering
 %Choose stage to analyse
 allstages=["nr","r","w"];
-stages=allstages(logical(OFFDATA_var.selectStages));
+stages=allstages(logical(OFFDATA.selectStages));
 for stageNum=1:length(stages)
 stage=stages(stageNum);
 %% collect bin number for start and end of each NREM epoch
 % cutting off one 4 second epoch at the beginning and end of each episode to exclude transitional states
 
 %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
-vigState = load(OFFDATA_var.VSpathin,'-mat',stage);
+vigState = load(OFFDATA.VSpathin,'-mat',stage);
 vigState = vigState.(stage);
 
 % find NREM episodes
@@ -90,17 +88,24 @@ numepochs=length(cleanepochs);
 2) Extract and concatenate NREM episodes only
 %}
 
-exampleObject = matfile(OFFDATA_var.PNEpathin);
+exampleObject = matfile(OFFDATA.PNEpathin);
 channelNums = who(exampleObject);
 %Sort channels
 numOnly=double(string(regexp(string(channelNums),'\d*','match')));
 [chanOrderNums,chanOrder]=sort(numOnly);
 %Remove selected channels
-if ~isempty(OFFDATA_var.ignoreChannels)
-    chanOrder=(chanOrder(~abs(sum(chanOrderNums==OFFDATA_var.ignoreChannels,2))));
+if ~isempty(OFFDATA.ignoreChannels)
+    chanOrder=(chanOrder(~abs(sum(chanOrderNums==OFFDATA.ignoreChannels,2))));
 end
-clear exampleObject
 
+PNElength=size(exampleObject,char(channelNums(1)),2);
+OFFDATA.(stage).StartOP=sparse(repmat(logical(0),PNElength,length(chanOrder)));
+OFFDATA.(stage).EndOP=sparse(repmat(logical(0),PNElength,length(chanOrder)));
+OFFDATA.(stage).AllOP=sparse(repmat(logical(0),PNElength,length(chanOrder)));
+OFFDATA.ChannelsFullName=string(channelNums(chanOrder));
+OFFDATA.Channels=double(string(cellfun(@(X) regexp(X,'\d*','match'),channelNums(chanOrder),'UniformOutput',false)));
+     
+clear exampleObject PNElength
 
 for chanNum = 1:length(chanOrder)
     chan=string(channelNums(chanOrder(chanNum)));    
@@ -108,14 +113,12 @@ for chanNum = 1:length(chanOrder)
     %skip channel if it's not a good channel (was excluded on visual inspection due to bad signals)
             
         %%% load pNe signal
-        PNE = load(OFFDATA_var.PNEpathin,'-mat',chan);
+        PNE = load(OFFDATA.PNEpathin,'-mat',chan);
         PNE = PNE.(chan);
         
         PNE = abs(PNE); %take absolute values
-        %PNE = PNE(1:1000000);  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
-        timePNE=[1/OFFDATA_var.PNEfs:1/OFFDATA_var.PNEfs:length(PNE)/OFFDATA_var.PNEfs];
-        
-        
+        PNE = PNE(1:1000000);  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
+                
         %%% collect pNe signal for all episodes of chosen vigilance state
         vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
         vsPNEtime=NaN(1,length(PNE)); %NaN vectors to be filled with recording time values
@@ -127,11 +130,11 @@ for chanNum = 1:length(chanOrder)
             Endepoch=cleanepochs(ep,2); %end of respective epoch
             
             %fill NaN vectors with pNe signal for this NREM episode
-            StartBin=ceil(Startepoch*OFFDATA_var.epochLen*OFFDATA_var.PNEfs);
-            EndBin=floor((Endepoch-1)*OFFDATA_var.epochLen*OFFDATA_var.PNEfs);
+            StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
+            EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
             try
                 vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
-                vsPNEtime(StartBin:EndBin)=timePNE(StartBin:EndBin);
+                vsPNEtime(StartBin:EndBin)=StartBin:EndBin;
             end
             
         end
@@ -147,8 +150,8 @@ for chanNum = 1:length(chanOrder)
 
 %% Data processing
 %%%Cluster 1
-if OFFDATA_var.clustVar1Select==1
-    winSize=OFFDATA_var.clustVar1Smooth;
+if OFFDATA.clustVar1Select==1
+    winSize=OFFDATA.clustVar1Smooth;
     clusterVar1=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar1=clusterVar1(winSize/2:end-winSize/2);
@@ -156,16 +159,16 @@ if OFFDATA_var.clustVar1Select==1
         clusterVar1=clusterVar1(ceil(winSize/2):floor(winSize/2));
     end
     clear winSize
-elseif OFFDATA_var.clustVar1Select==2
+elseif OFFDATA.clustVar1Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar1,F] = offPeriodScalogram(vsPNE,OFFDATA_var.PNEfs,percOverlap,LB_freq);
+    [clusterVar1,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
 %%%Cluster 2
-if OFFDATA_var.clustVar2Select==1
-    winSize=OFFDATA_var.clustVar2Smooth;
+if OFFDATA.clustVar2Select==1
+    winSize=OFFDATA.clustVar2Smooth;
     clusterVar2=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar2=clusterVar2(winSize/2:end-winSize/2);
@@ -173,20 +176,20 @@ if OFFDATA_var.clustVar2Select==1
         clusterVar2=clusterVar2(ceil(winSize/2):floor(winSize/2));
     end
     clear winSize
-elseif OFFDATA_var.clustVar2Select==2
+elseif OFFDATA.clustVar2Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar2,F] = offPeriodScalogram(vsPNE,OFFDATA_var.PNEfs,percOverlap,LB_freq);
+    [clusterVar2,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
 %% Spectral clustering (3 clusters)
 %Extracts 30s samples of recording and perfroms spectral clustering
 sampleLength=30; %in seconds
-totalSamp=floor(((length(vsPNE)/OFFDATA_var.PNEfs)/sampleLength));
-sampSize=round(OFFDATA_var.PNEfs*sampleLength);
+totalSamp=floor(((length(vsPNE)/OFFDATA.PNEfs)/sampleLength));
+sampSize=round(OFFDATA.PNEfs*sampleLength);
 sampStarts=([0:1:totalSamp-1]*sampSize)+1;
-numSamp=round(totalSamp*(OFFDATA_var.percSamp/100));
+numSamp=round(totalSamp*(OFFDATA.percSamp/100));
 color = lines(3);
 sampStarts=sampStarts(randsample(length(sampStarts),numSamp));
 
@@ -228,9 +231,8 @@ clusterIDX_total=ones(length(vsPNE),1);
 clusterIDX_total(ON_clust_points)=2;
 
 %%%%% Find all OFF periods
-OFFgaps=find(diff(vsPNEtime(OFF_clust_points))>(1/floor(OFFDATA_var.PNEfs))); %find last epoch of each episode
+OFFgaps=find(diff(vsPNEtime(OFF_clust_points))>1); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
-OFFperiod=[];
 %loop going through all OFF periods
 for ep = 1:numOFF
     if ep==1
@@ -243,16 +245,12 @@ for ep = 1:numOFF
         StartOFF=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
         EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
     end
-    OFFperiod=[OFFperiod; vsPNEtime(StartOFF) vsPNEtime(EndOFF)];
+    StartOFF=vsPNEtime(StartOFF);
+    EndOFF=vsPNEtime(EndOFF);
+    OFFDATA.(stage).StartOP(StartOFF,chanNum)=1;
+    OFFDATA.(stage).EndOP(EndOFF,chanNum)=1;
+    OFFDATA.(stage).AllOP(StartOFF:EndOFF,chanNum)=1;
     clear startOFF endOFF
-end
-OFFDATA.(chan).(stage)=OFFperiod;
-
-if strcmp(fieldnames(OFFDATA.(chan)),'AllOFFtimes')==0
-    OFFDATA.(chan).AllOFFtimes=[];
-end
-try
-    OFFDATA.(chan).AllOFFtimes=[OFFDATA.(chan).AllOFFtimes,OFF_clust_points];
 end
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
@@ -261,7 +259,7 @@ clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
 end
 end
 
-[OFFDATA]=OFFAD_channelstats(OFFDATA,OFFDATA_var);
+[OFFDATA]=OFFAD_channelstats(OFFDATA);
 
 
 %% Function used to optimise thresholds
