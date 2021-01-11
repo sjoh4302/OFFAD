@@ -1,14 +1,10 @@
 function [OFFDATA]=OFFAD_clustering(importDataVar)
-
-g.Import = findobj('tag', 'OFFAD_IMPORT');
-set(g.Import,'Visible','off')
-
 %Plotting
 g.Clustering = figure('Units','points', ...
 ... %	'Colormap','gray', ...
 	'PaperPosition',[18 180 576/2 432], ...
 	'PaperUnits','points', ...
-	'name', 'OFFAD (OFF_period Automated Detection)', ... 
+	'name', 'OFFAD (OFF_period Automated Detection) - Clustering', ... 
 	'numbertitle', 'off', ...
 	'Position',[200 300 700 100], ...
     'Toolbar','none',...
@@ -30,10 +26,10 @@ OFFDATA.VSpathin=importDataVar(4).String;
 OFFDATA.epochLen=double(string(importDataVar(7).String));
 OFFDATA.PNEpathin=importDataVar(9).String;
 OFFDATA.PNEfs=double(string(importDataVar(12).String));
-OFFDATA.PNEunits=importDataVar(14).String;
+OFFDATA.PNEunit=importDataVar(14).String(importDataVar(14).Value);
 OFFDATA.LFPpathin=importDataVar(16).String;
 OFFDATA.LFPfs=double(string(importDataVar(19).String));
-OFFDATA.LFPunit=importDataVar(21).String;
+OFFDATA.LFPunit=importDataVar(21).String(importDataVar(21).Value);
 OFFDATA.selectStages=[importDataVar(24).Value,...      
               importDataVar(26).Value,...
               importDataVar(28).Value];
@@ -43,6 +39,11 @@ OFFDATA.clustVar1Smooth=double(string(importDataVar(34).String));
 OFFDATA.clustVar2Select=double(string(importDataVar(35).Value)); %1 = amplitude, 2=power
 OFFDATA.clustVar2Smooth=double(string(importDataVar(37).String));
 OFFDATA.percSamp=double(string(importDataVar(39).String)); %percentage of signal to sample for cluster thresholding
+
+%Close import window
+g.Import = findobj('tag', 'OFFAD_IMPORT');
+close(g.Import)
+
 
 %%%%% Perform clustering
 %Choose stage to analyse
@@ -117,6 +118,10 @@ for chanNum = 1:length(chanOrder)
         PNE = PNE.(chan);
         
         PNE = abs(PNE); %take absolute values
+        
+        if OFFDATA.PNEunit=="V" %Convert to uV
+            PNE=PNE/1000000;
+        end
         PNE = PNE(1:1000000);  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%REMOV!!!!!!!!!!!!!!!!!
                 
         %%% collect pNe signal for all episodes of chosen vigilance state
@@ -151,12 +156,12 @@ for chanNum = 1:length(chanOrder)
 %% Data processing
 %%%Cluster 1
 if OFFDATA.clustVar1Select==1
-    winSize=OFFDATA.clustVar1Smooth;
+    winSize=(OFFDATA.clustVar1Smooth*2)+1;
     clusterVar1=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar1=clusterVar1(winSize/2:end-winSize/2);
     else
-        clusterVar1=clusterVar1(ceil(winSize/2):floor(winSize/2));
+        clusterVar1=clusterVar1(ceil(winSize/2):end-floor(winSize/2));
     end
     clear winSize
 elseif OFFDATA.clustVar1Select==2
@@ -168,12 +173,12 @@ end
 
 %%%Cluster 2
 if OFFDATA.clustVar2Select==1
-    winSize=OFFDATA.clustVar2Smooth;
+    winSize=(OFFDATA.clustVar2Smooth*2)+1;
     clusterVar2=conv(vsPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar2=clusterVar2(winSize/2:end-winSize/2);
     else
-        clusterVar2=clusterVar2(ceil(winSize/2):floor(winSize/2));
+        clusterVar2=clusterVar2(ceil(winSize/2):end-floor(winSize/2));
     end
     clear winSize
 elseif OFFDATA.clustVar2Select==2
@@ -250,7 +255,7 @@ for ep = 1:numOFF
     OFFDATA.(stage).StartOP(StartOFF,chanNum)=1;
     OFFDATA.(stage).EndOP(EndOFF,chanNum)=1;
     OFFDATA.(stage).AllOP(StartOFF:EndOFF,chanNum)=1;
-    clear startOFF endOFF
+   
 end
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
@@ -279,4 +284,90 @@ falsePos=sum(abs(diff([clusterIDX_sample,IDX_2clust],1,2)));
 
 
 
-
+%Draw a heatmap 
+figure
+  
+    Var1Max=round(prctile(clusterVar1,99));
+    Var2Max=round(prctile(clusterVar2,99));
+    nhistBins=800;
+    Var1edges=round(min(clusterVar1)):Var1Max/nhistBins:Var1Max;
+    Var2edges=round(min(clusterVar2)):Var2Max/nhistBins:Var2Max;
+[N,Var1edges,Var2edges] = histcounts2(clusterVar1,clusterVar2,Var1edges,Var2edges);
+   
+    imagesc(flip(N'))
+    oldX=xticks;
+    xticklabels(oldX/max(oldX)*ampMax)
+    oldY=yticks;
+    yticklabels(flip(oldY/max(oldY)*scaloMax))
+    c = hot;
+    c = flipud(c);
+    colormap(c);
+    %colormap('hot','Direction','reverse')
+    %caxis([50 430758])
+    %set(gca,'ColorScale','log')
+    %xlim([-0.05 1.05])
+    
+   
+    sampCluster=[clusterVar1(1:10000)',clusterVar2(1:10000)'];
+    clusterData=[clusterVar1_full',clusterVar2_full'];
+   %clusterData=[clusterVar1',clusterVar2'];
+    allIDX=[];
+    for i = 1:5
+        GMModels = fitgmdist(sampCluster,i);
+        allIDX(:,i)=cluster(GMModels,clusterData); 
+    end
+    eva = evalclusters(clusterData,allIDX,'CalinskiHarabasz')
+    GMModel = fitgmdist(sampCluster,eva.OptimalK);
+    IDX = cluster(GMModel,clusterData);
+    
+    
+    
+    %eva = evalclusters([clusterVar1(sampClusts)',clusterVar2(sampClusts)'],...
+     %   'gmdistribution','CalinskiHarabasz','KList',[1:4])
+    
+    
+    gmPDF = @(x,y) arrayfun(@(x0,y0) pdf(GMModel,[x0 y0]),x,y);
+    figure
+    fcontour(gmPDF,[0 1000 0 1000])
+    gm2 = gmdistribution(GMModel.mu(3,:),GMModel.Sigma(:,:,3));
+    gmPDF2 = @(x,y) arrayfun(@(x0,y0) pdf(gm2,[x0 y0]),x,y);
+    figure
+    fcontour(gmPDF2,[0 1000 0 1000])
+    
+    d = 500; % Grid length
+    x1 = linspace(min(clusterVar1), max(clusterVar1), d);
+    x2 = linspace(min(clusterVar2), max(clusterVar2), d);
+    [x1grid,x2grid] = meshgrid(x1,x2);
+    X0 = [x1grid(:) x2grid(:)];
+    mahalDist = mahal(GMModel,X0);
+    threshold = sqrt(chi2inv(0.9999,2));
+    figure
+    hold on
+    for m = 1:3
+        idx = mahalDist(:,m)<=threshold;
+        h2 = plot(X0(idx,1),X0(idx,2),'.','MarkerSize',1);
+        uistack(h2,'bottom');
+    end 
+    
+     P = posterior(GMModel,a);
+     
+    clusterAxes=gca;
+    figure
+    Var1Min=clusterAxes.XLim(1);
+    Var1Max=clusterAxes.XLim(2);
+    Var2Min=clusterAxes.YLim(1);
+    Var2Max=clusterAxes.YLim(2);
+    nhistBins=200;
+    Var1edges=Var1Min:(Var1Max-Var1Min)/nhistBins:Var1Max;
+    Var2edges=Var2Min:(Var2Max-Var2Min)/nhistBins:Var2Max;
+    [N,Var1edges,Var2edges] = histcounts2(clusterVar1,clusterVar2,Var1edges,Var2edges);
+    N(N==0)= max(max(N));
+    imagesc('XData',[Var1Min,Var1Max],'YData',[Var2Min,Var2Max],'CData',N')
+    xlim([Var1Min,Var1Max])
+    ylim([Var2Min,Var2Max])
+    c = hot;
+    %c = flipud(c);
+    colormap(c);
+   % caxis([0 2000])
+    %set(gca,'ColorScale','log')
+    %set(gca,'CLim',[0.1 2000])
