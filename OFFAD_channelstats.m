@@ -25,20 +25,20 @@ clear PNElength exampleObject
 OFFdurations=[];
 OFFdurationsID=[];
 for i = 1:length(OFFDATA.Channels)
-   start_end=[PNEtimeTemp(find(OFFDATA.nr.StartOP(:,i)==1)),...
-       PNEtimeTemp(find(OFFDATA.nr.EndOP(:,i)==1))];
+   start_end=[PNEtimeTemp(find(OFFDATA.StartOP(:,i)==1)),...
+       PNEtimeTemp(find(OFFDATA.EndOP(:,i)==1))];
    OFFdurations=[OFFdurations; (diff(start_end,1,2)+1/OFFDATA.PNEfs)*1000];
    OFFdurationsID=[OFFdurationsID; repmat(OFFDATA.Channels(i),length(start_end),1)];
    %Store summary info
-   OFFDATA.nr.MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.PNEfs)*100);
+   OFFDATA.Stats.MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.PNEfs)*100);
    clear start_end
 end
 
 %%%%%%% Channel coherence plot 
 for i = 1:length(OFFDATA.Channels)
     for j = 1:length(OFFDATA.Channels)
-       coherenceMat(i,j)=length(intersect(PNEtimeTemp(OFFDATA.nr.AllOP(:,i)),PNEtimeTemp(OFFDATA.nr.AllOP(:,j))))...
-           /sum(OFFDATA.nr.AllOP(:,i));
+       coherenceMat(i,j)=length(intersect(PNEtimeTemp(OFFDATA.AllOP(:,i)),PNEtimeTemp(OFFDATA.AllOP(:,j))))...
+           /sum(OFFDATA.AllOP(:,i));
     
     end
 end
@@ -46,14 +46,14 @@ coherenceMat(coherenceMat==1)=NaN;
 coherence=reshape(coherenceMat,[],1);
 coherenceID=reshape(repmat(OFFDATA.Channels,length(OFFDATA.Channels),1),[],1);
 %Store summary info
-OFFDATA.nr.MeanCoherence=nanmean(coherenceMat,2);
+OFFDATA.Stats.MeanCoherence=nanmean(coherenceMat,2);
 clear coherenceMat
 
 %%%%%%%%% Off period number
-OFFDATA.nr.OPnumber=full(sum(OFFDATA.nr.StartOP))';
+OFFDATA.Stats.OPnumber=full(sum(OFFDATA.StartOP))';
 
 %%%%%%%%% Off period occupancy time
-OFFDATA.nr.OPoccupancy_time=hours(seconds(sum(OFFDATA.nr.AllOP/OFFDATA.PNEfs)))';
+OFFDATA.Stats.OPoccupancy_time=hours(seconds(sum(OFFDATA.AllOP/OFFDATA.PNEfs)))';
 
 
 %%%% Make button selection
@@ -109,15 +109,15 @@ try
     for i = 1:length(OFFDATA.Channels)
          sig=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
          sig=bandpass(sig.(OFFDATA.ChannelsFullName(i)),[0.5 100],256);
-         LFPamp=[LFPamp;single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.nr.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.nr.AllOP(:,i))/(1/OFFDATA.LFPfs)))))'];
+         LFPamp=[LFPamp;single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))'];
          LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
-             length(unique(round(mod(PNEtimeTemp(OFFDATA.nr.AllOP(:,i)),1/OFFDATA.LFPfs)...
-              +PNEtimeTemp(OFFDATA.nr.AllOP(:,i))/(1/OFFDATA.LFPfs)))),1)];
+             length(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))),1)];
          
          %Store summary info
-         OFFDATA.nr.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.nr.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.nr.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
+         OFFDATA.Stats.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
         clear sig
     end
     
@@ -141,15 +141,15 @@ clear PNEtimeTemp
 
 %Assess outliers
 allChannelstats=[];
-channelStatsFields=fields(OFFDATA.nr);
-channelStatsFields=string(channelStatsFields(4:end));
+channelStatsFields=fields(OFFDATA.Stats);
+channelStatsFields=string(channelStatsFields);
 for i = 1:length(channelStatsFields)
-    allChannelstats(:,i)=OFFDATA.nr.(channelStatsFields(i));
+    allChannelstats(:,i)=OFFDATA.Stats.(channelStatsFields(i));
 end
 if size(allChannelstats,2)<size(allChannelstats,1)
-    OFFDATA.nr.MahalDist=mahal(allChannelstats,allChannelstats);
+    OFFDATA.Stats.MahalDist=mahal(allChannelstats,allChannelstats);
 else
-    OFFDATA.nr.MahalDist=ones(size(allChannelstats,1),1);
+    OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
 end
     
 %%%% Plot default graph
@@ -162,7 +162,7 @@ plottingColors=[0    0.4470    0.7410
                        0.9290    0.6940    0.1250];
 subplot('position',[0.07 0.12 0.65 0.8])
 set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.nr.MahalDist,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.MahalDist,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -185,7 +185,7 @@ function CHANNELSTAT_PLOT(source,event)
        
        if   event.NewValue.Tag=='1'
             set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.nr.MahalDist,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.MahalDist,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -203,7 +203,7 @@ function CHANNELSTAT_PLOT(source,event)
             
        elseif event.NewValue.Tag=='3'
             set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.nr.OPnumber,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.OPnumber,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -212,7 +212,7 @@ function CHANNELSTAT_PLOT(source,event)
             set(findobj('parent',gcf,'type', 'Axes'),'YTickLabel',get(findobj('parent',gcf,'type', 'Axes'),'YTick'))
 
        elseif event.NewValue.Tag=='4'
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.nr.OPoccupancy_time,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.OPoccupancy_time,...
                 [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])

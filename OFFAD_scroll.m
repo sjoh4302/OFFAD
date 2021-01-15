@@ -69,7 +69,7 @@ for i = 1:numChan
     yyaxis left
     stem(tmpPNEtime,PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE:endPNE),'-','LineWidth',1,'Marker','none','ShowBaselin','off')
     hold on
-    stem(tmpPNEtime(find(OFFDATA.nr.AllOP(startPNE:endPNE,i))),PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE-1+find(OFFDATA.nr.AllOP(startPNE:endPNE,i))),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
+    stem(tmpPNEtime(find(OFFDATA.AllOP(startPNE:endPNE,i))),PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE-1+find(OFFDATA.AllOP(startPNE:endPNE,i))),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
     ylim([-150 150])
     
     %LFPtmp=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));

@@ -42,7 +42,7 @@ if ~isempty(OFFDATA.ignoreChannels)
 end
 OFFDATA.ChannelsFullName=string(channelNums(chanOrder));
 OFFDATA.Channels=double(string(cellfun(@(X) regexp(X,'\d*','match'),channelNums(chanOrder),'UniformOutput',false)));
-
+OFFDATA.OptimalK=zeros(length(OFFDATA.Channels),1);
 %% Initialise vigilance state data
 % cutting off one 4 second epoch at the beginning and end of each episode to exclude transitional states
 stage='nr';
@@ -94,8 +94,8 @@ uicontrol(g.Preclustering,'Style', 'pushbutton','String','Return',...
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Done',...
     'FontWeight','bold','FontSize',12,...
     'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
-    'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_IMPORT'')]);close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
-
+    'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
+%close([findobj(''tag'', ''OFFAD_IMPORT'')])
 
 
 
@@ -180,7 +180,7 @@ elseif OFFDATA.clustVar2Select==2
 end
 
 
- randPoints=randi(length(clusterVar1),10000,1);
+    randPoints=randi(length(clusterVar1),10000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
     allIDX=[];
     %allIDX2=[];
@@ -192,6 +192,7 @@ end
         %allIDX2(:,i)=cluster(GMModels,clusterData2);
     end
     eva = evalclusters(sampCluster,allIDX,string(OFFDATA.clustEval));
+    OFFDATA.OptimalK(source.Value)=eva.OptimalK;
     GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',5,'Options',options);
    
     %Plot cluster examples
