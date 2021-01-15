@@ -325,8 +325,8 @@ figure
     %allIDX2=[];
     %%%DONT SELECT SHARED COVARIANCE (fails to find off period cluster)
     for i = 1:8
-        options = statset('MaxIter',100);
-        GMModels = fitgmdist(sampCluster,i,'Replicates',20,'Options',options);
+        options = statset('MaxIter',1000,'TolFun',1e-5);
+        GMModels = fitgmdist(sampCluster,i,'Replicates',5,'Options',options);
         allIDX(:,i)=cluster(GMModels,sampCluster);
         %allIDX2(:,i)=cluster(GMModels,clusterData2);
     end
@@ -335,7 +335,8 @@ figure
     % eva2 = evalclusters(clusterData2,allIDX2,'CalinskiHarabasz')
     randPoints=randi(length(clusterVar1),1000000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
-    GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',5,'Options',options);
+    options = statset('MaxIter',1000,'TolFun',1e-5);
+    GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',20,'Options',options);
     IDX = cluster(GMModel,clusterData);
     
     [~,offCluster]=min(GMModel.mu(:,1));
@@ -358,10 +359,12 @@ figure
     [x1grid,x2grid] = meshgrid(x1,x2);
     X0 = [x1grid(:) x2grid(:)];
     mahalDist = mahal(GMModel,X0);
-    threshold = sqrt(chi2inv(0.9999,2));
+    threshold = sqrt(chi2inv(0.99,2));
     hold on
+    [~,clustOrder]=sort(GMModel.mu(:,1)); 
     for m = 1:size(mahalDist,2)
-        idx = mahalDist(:,m)<=threshold;
+        currentClust=clustOrder(m);
+        idx = mahalDist(:,currentClust)<=threshold;
         h2 = plot(X0(idx,1),X0(idx,2),'.','MarkerSize',1);
         uistack(h2,'bottom');
     end 
