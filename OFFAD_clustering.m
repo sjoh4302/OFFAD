@@ -307,52 +307,69 @@ figure
     %set(gca,'ColorScale','log')
     %xlim([-0.05 1.05])
     
-   
-    sampCluster=[clusterVar1(1:10000)',clusterVar2(1:10000)'];
+    randStart=randi(length(clusterVar1-100000),1);
+    %sampCluster=[clusterVar1(randStart:randStart+100000)',clusterVar2(randStart:randStart+100000)'];
+    randPoints=randi(length(clusterVar1),100000,1);
+    sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
+    sampCluster=[rescale(sampCluster(:,1)),rescale(sampCluster(:,2))];
+    clusterData=[clusterVar1',clusterVar2'];
+    clusterData=[rescale(clusterData(:,1)),rescale(clusterData(:,2))];
+    
+    randPoints=randi(length(clusterVar1_full),100000,1);
+    sampCluster=[clusterVar1_full(randPoints)',clusterVar2_full(randPoints)'];
     clusterData=[clusterVar1_full',clusterVar2_full'];
-   %clusterData=[clusterVar1',clusterVar2'];
+    %%
+    randPoints=randi(length(clusterVar1),10000,1);
+    sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
     allIDX=[];
-    for i = 1:5
-        GMModels = fitgmdist(sampCluster,i);
-        allIDX(:,i)=cluster(GMModels,clusterData); 
+    %allIDX2=[];
+    %%%DONT SELECT SHARED COVARIANCE (fails to find off period cluster)
+    for i = 1:8
+        options = statset('MaxIter',100);
+        GMModels = fitgmdist(sampCluster,i,'Replicates',20,'Options',options);
+        allIDX(:,i)=cluster(GMModels,sampCluster);
+        %allIDX2(:,i)=cluster(GMModels,clusterData2);
     end
-    eva = evalclusters(clusterData,allIDX,'CalinskiHarabasz')
-    GMModel = fitgmdist(sampCluster,eva.OptimalK);
+    eva = evalclusters(sampCluster,allIDX,'CalinskiHarabasz')
+    %eva = evalclusters(sampCluster,'gmdistribution','CalinskiHarabasz','KList',[1:5])
+    % eva2 = evalclusters(clusterData2,allIDX2,'CalinskiHarabasz')
+    randPoints=randi(length(clusterVar1),1000000,1);
+    sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
+    GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',5,'Options',options);
     IDX = cluster(GMModel,clusterData);
     
-    
-    
+    [~,offCluster]=min(GMModel.mu(:,1));
+    startPoint=round(732*OFFDATA.PNEfs);
+    figure
+    stem(PNE(startPoint:startPoint+4000),'-','LineWidth',1,'Marker','none','ShowBaselin','off')
+    hold on
+    stem(find(IDX(startPoint:startPoint+4000)==offCluster),PNE(startPoint-1+find(IDX(startPoint:startPoint+4000)==offCluster)),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
+      %%  
     %eva = evalclusters([clusterVar1(sampClusts)',clusterVar2(sampClusts)'],...
      %   'gmdistribution','CalinskiHarabasz','KList',[1:4])
     
     
     gmPDF = @(x,y) arrayfun(@(x0,y0) pdf(GMModel,[x0 y0]),x,y);
-    figure
-    fcontour(gmPDF,[0 1000 0 1000])
-    gm2 = gmdistribution(GMModel.mu(3,:),GMModel.Sigma(:,:,3));
-    gmPDF2 = @(x,y) arrayfun(@(x0,y0) pdf(gm2,[x0 y0]),x,y);
-    figure
-    fcontour(gmPDF2,[0 1000 0 1000])
-    
-    d = 500; % Grid length
+    figure('Position',[80,150,1400,600])
+    subplot(1,2,2)
+    d = 700; % Grid density
     x1 = linspace(min(clusterVar1), max(clusterVar1), d);
     x2 = linspace(min(clusterVar2), max(clusterVar2), d);
     [x1grid,x2grid] = meshgrid(x1,x2);
     X0 = [x1grid(:) x2grid(:)];
     mahalDist = mahal(GMModel,X0);
     threshold = sqrt(chi2inv(0.9999,2));
-    figure
     hold on
-    for m = 1:3
+    for m = 1:size(mahalDist,2)
         idx = mahalDist(:,m)<=threshold;
         h2 = plot(X0(idx,1),X0(idx,2),'.','MarkerSize',1);
         uistack(h2,'bottom');
     end 
     
-     P = posterior(GMModel,a);
+    %P = posterior(GMModel,a);
      
     clusterAxes=gca;
-    figure
+    subplot(1,2,1)
     Var1Min=clusterAxes.XLim(1);
     Var1Max=clusterAxes.XLim(2);
     Var2Min=clusterAxes.YLim(1);
@@ -371,3 +388,9 @@ figure
    % caxis([0 2000])
     %set(gca,'ColorScale','log')
     %set(gca,'CLim',[0.1 2000])
+    
+    figure
+    dispSample=randi(length(clusterData),1,10000);
+    gscatter(clusterData(dispSample,1),clusterData(dispSample,2),IDX(dispSample))
+    xlim([clusterAxes.XLim(1),clusterAxes.XLim(2)])
+    ylim([clusterAxes.YLim(1),clusterAxes.YLim(2)])
