@@ -1,4 +1,6 @@
 function [OFFDATA]=OFFAD_clustering(OFFDATA)
+functionTimer = tic;
+
 %Plotting
 g.Clustering = figure('Units','points', ...
 ... %	'Colormap','gray', ...
@@ -66,6 +68,9 @@ OFFDATA.AllOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName
 clear exampleObject 
 
 for chanNum = 1:length(OFFDATA.ChannelsFullName)
+    %Start channel timer
+    channelTimer=tic;
+    
     chan=OFFDATA.ChannelsFullName(chanNum);    
     display(['Clustering ',char(chan)])
 
@@ -185,6 +190,7 @@ IDX = cluster(GMModel,allData);
 
 
 %% Find off periods 
+%profile on
 allPoints=[1:1:PNElength];
 
 [~,offCluster]=min(GMModel.mu(:,1));
@@ -194,29 +200,49 @@ OFF_clust_points=allPoints(IDX==offCluster);
 OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
 %loop going through all OFF periods
-for ep = 1:6000%numOFF
+for ep = 1:numOFF
     if ep==1
-        StartOFF=OFF_clust_points(1); %find start point of this OFF period
-        EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
+        StartOFF(ep)=OFF_clust_points(1); %find start point of this OFF period
+        EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
     elseif ep==numOFF
-        StartOFF=OFF_clust_points(OFFgaps(ep)+1); %find start point of this OFF period
-        EndOFF=OFF_clust_points(end); %find last point of this OFF period
+        StartOFF(ep)=OFF_clust_points(OFFgaps(ep)+1); %find start point of this OFF period
+        EndOFF(ep)=OFF_clust_points(end); %find last point of this OFF period
     else
-        StartOFF=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
-        EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
+        StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
+        EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
     end
-    OFFDATA.StartOP(StartOFF,chanNum)=1;
-    OFFDATA.EndOP(EndOFF,chanNum)=1;
-    OFFDATA.AllOP(StartOFF:EndOFF,chanNum)=1;
-    if  mod(ep,1000)==0
-        display([char(string(ep)),'/',char(string(numOFF))])
-    end
+    
+   
 end
+
+%Store START OFF-P data
+OFFDATA.StartOP(:,chanNum)=sparse(StartOFF,1,logical(1),length(OFFDATA.StartOP),1,length(StartOFF));
+
+%Store END OFF-P data
+OFFDATA.EndOP(:,chanNum)=sparse(EndOFF,1,logical(1),length(OFFDATA.StartOP),1,length(EndOFF));
+
+%Store ALL OFF-P data
+OFFDATA.AllOP(:,chanNum)=sparse(OFF_clust_points,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
+
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
-      clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled
+      clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled StartOFF EndOFF
 
+%Display total channel clustering time
+channelTime=toc(channelTimer);
+display(['Channel clustering time = ',char(string(channelTime)),' sec'])
 end
 
+%Display total function clustering time
+functionTime=toc(functionTimer);
+display(['Total clustering time = ',char(string(functionTime)),' sec'])
 
 [OFFDATA]=OFFAD_channelstats(OFFDATA);
+
+
+%n=10;
+%S = spalloc(n,n,3*n);
+%for j = 1:n
+%    ind = [max(j-1,1) j min(j+1,n)]
+%    S(:,j) = sparse(ind,1,round(rand(3,1)),n,1,3);
+%end

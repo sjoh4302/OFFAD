@@ -78,14 +78,7 @@ end
 
 numepochs=length(cleanepochs);
 
-%%% Create list to scroll through channels
-uicontrol(g.Preclustering,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName,...
-    'FontWeight','bold','FontSize',18,...
-    'Units','normalized',...
-    'Position',[0.2 0.95 0.6 0.05],...
-    'CreateFcn',@plotClustNum,...
-    'Callback',@plotClustNum);
- 
+
 %%% Create button to return to import screen
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Return',...
     'FontWeight','bold','FontSize',12,...
@@ -99,21 +92,38 @@ uicontrol(g.Preclustering,'Style', 'pushbutton','String','Done',...
     'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
 %close([findobj(''tag'', ''OFFAD_IMPORT'')])
 
+%%% Create button to re-cluster channel
+uicontrol(g.Preclustering,'Style', 'pushbutton','String','Recluster',...
+    'FontWeight','bold','FontSize',12,...
+    'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
+    'Position',[0.46 0 0.08 0.08],'Callback',@plotClustNum);
+
+%%% Create list to scroll through channels
+uicontrol(g.Preclustering,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName,...
+    'FontWeight','bold','FontSize',18,...
+    'Units','normalized',...
+    'Position',[0.2 0.95 0.6 0.05],...
+    'CreateFcn',@plotClustNum,...
+    'Callback',@plotClustNum);
+ 
 
 
-function plotClustNum(source,~)
+
+function plotClustNum(~,~)
        axesHandles=get(findobj('Tag','OFFAD_PRECLUSTER'),'Children');
        try
-           cla(axesHandles(4));
            cla(axesHandles(5));
+           cla(axesHandles(6));
        end
        drawnow
  %%% load pNe signal
-        if iscell(source.String)==0
-            source.String={source.String};
+        channelString=axesHandles(1).String
+        channelValue=axesHandles(1).Value
+        if iscell(channelString)==0
+            channelString={channelString};
         end
-        PNE = load(OFFDATA.PNEpathin,'-mat',string(source.String(source.Value)));
-        PNE = PNE.(string(source.String(source.Value)));
+        PNE = load(OFFDATA.PNEpathin,'-mat',string(channelString(channelValue)));
+        PNE = PNE.(string(channelString(channelValue)));
         PNE = int16(PNE);
         
         PNE = abs(PNE); %take absolute values
@@ -185,7 +195,7 @@ elseif OFFDATA.clustVar2Select==2
     clear LB_freq percOverlap F
 end
 
-
+%% Cluster sample data 
     randPoints=randi(length(clusterVar1),10000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
     allIDX=[];
@@ -198,10 +208,10 @@ end
         %allIDX2(:,i)=cluster(GMModels,clusterData2);
     end
     eva = evalclusters(sampCluster,allIDX,string(OFFDATA.clustEval));
-    OFFDATA.OptimalK(source.Value)=eva.OptimalK;
+    OFFDATA.OptimalK(channelValue)=eva.OptimalK;
     GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',5,'Options',options);
    
-    %Plot cluster examples
+%% Plot cluster examples
     gmPDF = @(x,y) arrayfun(@(x0,y0) pdf(GMModel,[x0 y0]),x,y);
     subplot(1,2,2)
     d = 700; % Grid density
@@ -225,7 +235,12 @@ end
     end 
     xlabel('Clustering variable 1')
     ylabel('Clustering variable 2')
-    %P = posterior(GMModel,a);
+    xlmts=get(gca,'XLim');
+    ylmts=get(gca,'YLim');
+    text(xlmts(1)+0.05*(xlmts(2)-xlmts(1)),ylmts(1)+0.9*(ylmts(2)-ylmts(1)),...
+    {['Clust Eval: ',char(string(OFFDATA.clustEval))],['Optimal K: ',char(string(eva.OptimalK))]},...
+    'FontSize',14)
+    
      
     clusterAxes=gca;
     subplot(1,2,1)

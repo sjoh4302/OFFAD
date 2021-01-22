@@ -1,5 +1,5 @@
 function OFFAD_scroll(OFFDATA); 
-
+profile on
 %Plotting
 g.Scroll = figure('Units','points', ...
     'Color','white',...
@@ -155,8 +155,9 @@ tmpLFPtime=[startLFP/OFFDATA.LFPfs:1/OFFDATA.LFPfs:endLFP/OFFDATA.LFPfs];
 
 %Get plotting scales
 PNEscale=str2num(get(findobj('Tag','PNEscale'),'String'));
-LFPscale=str2num(get(findobj('Tag','LFPscale'),'String'));
-
+if isempty(OFFDATA.LFPpathin)==0
+    LFPscale=str2num(get(findobj('Tag','LFPscale'),'String'));
+end
 
 numChan=length(OFFDATA.Channels);
 subplot2=linspace(0.1,0.95,numChan+1);
@@ -205,7 +206,8 @@ drawOFFP
 
 end
 
-
+profile off
+profile viewer
 end
 %clear PNEtmp
 %clear LFPtmp

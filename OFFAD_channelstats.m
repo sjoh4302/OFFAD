@@ -56,7 +56,6 @@ OFFDATA.Stats.OPnumber=full(sum(OFFDATA.StartOP))';
 %%%%%%%%% Off period occupancy time
 OFFDATA.Stats.OPoccupancy_time=hours(seconds(sum(OFFDATA.AllOP/OFFDATA.PNEfs)))';
 
-%if isfield(OFFDATA,'Stats')==0
 %%%%%%%%% Optional LFP info
 try
     %Filter settings
@@ -86,7 +85,7 @@ try
 end    
     
 
-
+%if isfield(OFFDATA.Stats,'MahalDist')==0
 %Assess outliers
 allChannelstats=[];
 channelStatsFields=fields(OFFDATA.Stats);
@@ -99,7 +98,7 @@ if size(allChannelstats,2)<size(allChannelstats,1)
 else
     OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
 end
-    
+%end    
 
 %% Draw figure
 %%%% Make button selection
@@ -149,15 +148,16 @@ uicontrol(plotBG,'Style',...
                   'Tag','5',...
                   'HandleVisibility','off');    
 
+ if isempty(OFFDATA.LFPpathin)==0
     uicontrol(plotBG,'Style',...
-                  'radiobutton',...
-                  'String','LFP amplitude',...
-                  'Units','normalized',...
-                  'Position',[0.1 0 1 0.2],...
-                  'FontSize',13,...
-                  'Tag','6',...
-                  'HandleVisibility','off'); 
-              
+    'radiobutton',...
+    'String','LFP amplitude',...
+    'Units','normalized',...
+    'Position',[0.1 0 1 0.2],...
+    'FontSize',13,...
+    'Tag','6',...
+    'HandleVisibility','off'); 
+ end          
               
 plotBG.Visible='on';
 
