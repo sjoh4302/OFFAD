@@ -24,15 +24,17 @@ OFFDATA.PNEunit=importDataVar(14).String(importDataVar(14).Value);
 OFFDATA.LFPpathin=importDataVar(16).String;
 OFFDATA.LFPfs=double(string(importDataVar(19).String));
 OFFDATA.LFPunit=importDataVar(21).String(importDataVar(21).Value);
-OFFDATA.clustEval=[importDataVar(23).String(importDataVar(23).Value)];
-OFFDATA.ignoreChannels=double(string(regexp(importDataVar(25).String,'\d*','match')));
-OFFDATA.clustVar1Select=double(string(importDataVar(27).Value)); %1 = amplitude, 2=power
-OFFDATA.clustVar1Smooth=double(string(importDataVar(29).String));
-OFFDATA.clustVar2Select=double(string(importDataVar(30).Value)); %1 = amplitude, 2=power
-OFFDATA.clustVar2Smooth=double(string(importDataVar(32).String));
-OFFDATA.percSamp=double(string(importDataVar(34).String)); %percentage of signal to sample for cluster thresholding
+OFFDATA.FiltLPF=double(importDataVar(23).Value);
+OFFDATA.clustEval=[importDataVar(25).String(importDataVar(25).Value)];
+OFFDATA.ignoreChannels=double(string(regexp(importDataVar(27).String,'\d*','match')));
+OFFDATA.clustVar1Select=double(string(importDataVar(29).Value)); %1 = amplitude, 2=power
+OFFDATA.clustVar1Smooth=double(string(importDataVar(31).String));
+OFFDATA.clustVar2Select=double(string(importDataVar(32).Value)); %1 = amplitude, 2=power
+OFFDATA.clustVar2Smooth=double(string(importDataVar(34).String));
+OFFDATA.percSamp=double(string(importDataVar(36).String)); %percentage of signal to sample for cluster thresholding
 exampleObject = matfile(OFFDATA.PNEpathin);
 channelNums = who(exampleObject);
+channelNums = channelNums(find(contains(channelNums,'ch','IgnoreCase',true)));
 %Sort channels
 numOnly=double(string(regexp(string(channelNums),'\d*','match')));
 [chanOrderNums,chanOrder]=sort(numOnly);
@@ -107,8 +109,12 @@ function plotClustNum(source,~)
        end
        drawnow
  %%% load pNe signal
+        if iscell(source.String)==0
+            source.String={source.String};
+        end
         PNE = load(OFFDATA.PNEpathin,'-mat',string(source.String(source.Value)));
         PNE = PNE.(string(source.String(source.Value)));
+        PNE = int16(PNE);
         
         PNE = abs(PNE); %take absolute values
         

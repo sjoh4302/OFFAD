@@ -58,7 +58,7 @@ numepochs=length(cleanepochs);
 %}
 
 exampleObject = matfile(OFFDATA.PNEpathin);
-channelNums = who(exampleObject);
+
 PNElength=size(exampleObject,OFFDATA.ChannelsFullName(1),2);
 OFFDATA.StartOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName)));
 OFFDATA.EndOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName)));
@@ -74,8 +74,9 @@ for chanNum = 1:length(OFFDATA.ChannelsFullName)
         %%% load pNe signal
         PNE = load(OFFDATA.PNEpathin,'-mat',chan);
         PNE = PNE.(chan);
+        PNE = int16(PNE);
         
-        PNE = abs(PNE); %take absolute values
+        PNE = abs(PNE); %take absolute values 
         
         if OFFDATA.PNEunit=="V" %Convert to uV
             PNE=PNE/1000000;
@@ -185,6 +186,7 @@ IDX = cluster(GMModel,allData);
 
 %% Find off periods 
 allPoints=[1:1:PNElength];
+
 [~,offCluster]=min(GMModel.mu(:,1));
 OFF_clust_points=allPoints(IDX==offCluster);
 
@@ -192,7 +194,7 @@ OFF_clust_points=allPoints(IDX==offCluster);
 OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
 %loop going through all OFF periods
-for ep = 1:numOFF
+for ep = 1:6000%numOFF
     if ep==1
         StartOFF=OFF_clust_points(1); %find start point of this OFF period
         EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
@@ -203,12 +205,12 @@ for ep = 1:numOFF
         StartOFF=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
         EndOFF=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
     end
-    StartOFF=vsPNEtime(StartOFF);
-    EndOFF=vsPNEtime(EndOFF);
     OFFDATA.StartOP(StartOFF,chanNum)=1;
     OFFDATA.EndOP(EndOFF,chanNum)=1;
     OFFDATA.AllOP(StartOFF:EndOFF,chanNum)=1;
-    
+    if  mod(ep,1000)==0
+        display([char(string(ep)),'/',char(string(numOFF))])
+    end
 end
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...

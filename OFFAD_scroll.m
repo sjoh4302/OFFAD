@@ -27,29 +27,124 @@ set(ht,'FontSize',16)
 drawnow
 
 PNEtmp=load(OFFDATA.PNEpathin,OFFDATA.ChannelsFullName{:});
-LFPtmp=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName{:});
-
 PNEexampleObject = matfile(OFFDATA.PNEpathin);
 PNElength=size(PNEexampleObject,OFFDATA.ChannelsFullName(1),2);
 
-LFPexampleObject = matfile(OFFDATA.LFPpathin);
-LFPlength=size(LFPexampleObject,OFFDATA.ChannelsFullName(1),2);
+if isempty(OFFDATA.LFPpathin)==0
+    %Filter settings
+    p1=0.5; p2=100; s1=0.1; s2=120;
+    Wp=[p1 p2]/(OFFDATA.LFPfs/2); Ws=[s1 s2]/(OFFDATA.LFPfs/2); Rp=3; Rs=30;
+    [n, Wn]=cheb2ord(Wp,Ws,Rp,Rs);
+    [bb1,aa1]=cheby2(n,Rs,Wn);
+    LFPtmp=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName{:});
+    if OFFDATA.FiltLPF==1
+        for j = 1:length(OFFDATA.ChannelsFullName)
+            LFPtmp.(OFFDATA.ChannelsFullName(j))=filtfilt(bb1,aa1,LFPtmp.(OFFDATA.ChannelsFullName(j)));
+        end
+    end
+    LFPexampleObject = matfile(OFFDATA.LFPpathin);
+    LFPlength=size(LFPexampleObject,OFFDATA.ChannelsFullName(1),2);
+end
+
+%Select PNE scale
+uicontrol(g.Scroll,'Style', 'text','String','PNE max',...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'Position',[0.03 0.02 0.07 0.04]);
+uicontrol(g.Scroll,'Style', 'edit','String',150,...
+    'FontSize',8,...
+    'Units','normalized',...
+    'BackgroundColor',[1 1 1],...
+    'Position',[0.1 0.02 0.05 0.04],...
+    'Tag','PNEscale',...
+    'Callback',@drawOFFP);
+uicontrol(g.Scroll,'Style', 'text','String','uV',...
+    'FontSize',8,...
+    'Units','normalized',...
+    'Position',[0.15 0.027 0.02 0.026]);
+
+%Select LFP scale
+if isempty(OFFDATA.LFPpathin)==0
+    uicontrol(g.Scroll,'Style', 'text','String','LFP max',...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'Position',[0.83 0.02 0.07 0.04]);
+    uicontrol(g.Scroll,'Style', 'edit','String',700,...
+    'FontSize',8,...
+    'Units','normalized',...
+    'BackgroundColor',[1 1 1],...
+    'Position',[0.9 0.02 0.05 0.04],...
+    'Tag','LFPscale',...
+    'Callback',@drawOFFP);
+    uicontrol(g.Scroll,'Style', 'text','String','uV',...
+    'FontSize',8,...
+    'Units','normalized',...
+    'Position',[0.95 0.027 0.02 0.026]);
+
+end
 
 
+%Create forward and backward scrolling arrows
+uicontrol(g.Scroll,'Style', 'pushbutton','String', '<',...
+    'FontWeight','bold','FontSize',20,...
+    'Units','normalized',...
+    'Position',[0.30 0.01 0.04 0.05],...
+    'Callback',@shiftScroll);
+
+uicontrol(g.Scroll,'Style', 'pushbutton','String', '>',...
+    'FontWeight','bold','FontSize',20,...
+    'Units','normalized',...
+    'Position',[0.66 0.01 0.04 0.05],...
+     'Callback',@shiftScroll);
+
+%Show X-scale
+uicontrol(g.Scroll,'Style', 'text','String','0.5 sec',...
+    'FontSize',8,...
+    'Units','normalized',...
+    'BackgroundColor',[1 1 1],...
+    'Position',[0.11 0.09 0.04 0.02]); 
+
+
+%Display current time in seconds
+uicontrol(g.Scroll,'Style', 'edit','String','0',...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'Position',[0.46 0.01 0.08 0.04],'CreateFcn',@drawOFFP,...
+    'Tag','scrollTime',...
+    'Callback',@drawOFFP);
 uicontrol(g.Scroll,'Style', 'text','String','Seconds',...
     'FontWeight','bold','FontSize',10,...
     'Units','normalized',...
     'Position',[0.54 0.01 0.08 0.04]);
 
-uicontrol(g.Scroll,'Style', 'edit','String','0',...
-    'FontWeight','bold','FontSize',10,...
-    'Units','normalized',...
-    'Position',[0.46 0.01 0.08 0.04],'CreateFcn',@drawOFFP,...
-    'Callback',@drawOFFP);
- 
 
-function drawOFFP(source,~)
-startSec=str2num(source.String);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function drawOFFP(~,~)
+oldTime=str2num(get(findobj('Tag','scrollTime'),'String'));
+%Check selected value within bounds
+if oldTime<0
+    newTime=num2str(0);
+    set(findobj('Tag','scrollTime'),'String',newTime);
+end
+if oldTime>round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5
+    newTime=num2str(round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5);
+    set(findobj('Tag','scrollTime'),'String',newTime);
+end
+
+startSec=str2num(get(findobj('Tag','scrollTime'),'String'));
 startPNE=round(startSec/(1/OFFDATA.PNEfs))+1;
 endPNE=round(startSec/(1/OFFDATA.PNEfs))+2000;
 
@@ -58,24 +153,34 @@ startLFP=round(mod(startPNE/OFFDATA.PNEfs,1/OFFDATA.LFPfs)+startPNE/OFFDATA.PNEf
 endLFP=round(mod(endPNE/OFFDATA.PNEfs,1/OFFDATA.LFPfs)+endPNE/OFFDATA.PNEfs/(1/OFFDATA.LFPfs));
 tmpLFPtime=[startLFP/OFFDATA.LFPfs:1/OFFDATA.LFPfs:endLFP/OFFDATA.LFPfs];
 
+%Get plotting scales
+PNEscale=str2num(get(findobj('Tag','PNEscale'),'String'));
+LFPscale=str2num(get(findobj('Tag','LFPscale'),'String'));
+
 
 numChan=length(OFFDATA.Channels);
 subplot2=linspace(0.1,0.95,numChan+1);
 subplot4=(subplot2(2)-subplot2(1))-(subplot2(2)-subplot2(1))/10;
 for i = 1:numChan
-    %PNEtmp=load(OFFDATA.PNEpathin,OFFDATA.ChannelsFullName(i));
-    %PNEtmp=PNEtmp.(OFFDATA.ChannelsFullName(i));
-    subplot('Position',[0.06 subplot2(i) 0.88 subplot4]);
+    uicontrol(g.Scroll,'Style', 'text','String',OFFDATA.ChannelsFullName(i),...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'BackgroundColor',[1 1 1],...
+    'Position',[0.02 subplot2(i)+subplot4*0.45 0.04 0.03]);  %Plot channel name
+
+    subplot('Position',[0.08 subplot2(i) 0.84 subplot4]);
     yyaxis left
     stem(tmpPNEtime,PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE:endPNE),'-','LineWidth',1,'Marker','none','ShowBaselin','off')
     hold on
     stem(tmpPNEtime(find(OFFDATA.AllOP(startPNE:endPNE,i))),PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE-1+find(OFFDATA.AllOP(startPNE:endPNE,i))),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
-    ylim([-150 150])
+    ylim([-PNEscale PNEscale])
     
-    %LFPtmp=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
-    %LFPtmp=LFPtmp.(OFFDATA.ChannelsFullName(i));
-    yyaxis right
-    plot(tmpLFPtime,LFPtmp.(OFFDATA.ChannelsFullName(i))(startLFP:endLFP),'-')
+    if isempty(OFFDATA.LFPpathin)==0
+        yyaxis right
+        plot(tmpLFPtime,LFPtmp.(OFFDATA.ChannelsFullName(i))(startLFP:endLFP),'-')
+        ylim([-LFPscale LFPscale])
+    end
+    
     xlim([tmpPNEtime(1) tmpPNEtime(end)])
     set(gca,'Box','off')
     if i>1
@@ -85,6 +190,21 @@ for i = 1:numChan
 end
 
 end
+
+function shiftScroll(source,~)
+
+if source.String=='<'
+    newTime=str2num(get(findobj('Tag','scrollTime'),'String'))-4;
+    set(findobj('Tag','scrollTime'),'String',num2str(newTime));
+elseif source.String=='>'
+    newTime=str2num(get(findobj('Tag','scrollTime'),'String'))+4;
+    set(findobj('Tag','scrollTime'),'String',num2str(newTime));
+end
+
+drawOFFP
+
+end
+
 
 end
 %clear PNEtmp

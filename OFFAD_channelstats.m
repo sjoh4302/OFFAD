@@ -14,6 +14,7 @@ g.Channelstats = figure('Units','points', ...
 	'Position',[200 100 800 450], ...
     'Tag','OFFAD_CHANNELSTATS');
 drawnow 
+%% Compute statistics (if missing)
 
 %%% Generate temporary variable
 exampleObject = matfile(OFFDATA.PNEpathin);
@@ -55,7 +56,52 @@ OFFDATA.Stats.OPnumber=full(sum(OFFDATA.StartOP))';
 %%%%%%%%% Off period occupancy time
 OFFDATA.Stats.OPoccupancy_time=hours(seconds(sum(OFFDATA.AllOP/OFFDATA.PNEfs)))';
 
+%if isfield(OFFDATA,'Stats')==0
+%%%%%%%%% Optional LFP info
+try
+    %Filter settings
+    p1=0.5; p2=100; s1=0.1; s2=120;
+    Wp=[p1 p2]/(OFFDATA.LFPfs/2); Ws=[s1 s2]/(OFFDATA.LFPfs/2); Rp=3; Rs=30;
+    [n, Wn]=cheb2ord(Wp,Ws,Rp,Rs);
+    [bb1,aa1]=cheby2(n,Rs,Wn);
+    LFPamp=[];
+    LFPampID=[];
+    for i = 1:length(OFFDATA.Channels)
+         sig=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
+         sig=sig.(OFFDATA.ChannelsFullName(i));
+         if OFFDATA.FiltLPF==1
+             sig=filtfilt(bb1,aa1,sig);
+         end
+         LFPamp=[LFPamp;single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))'];
+         LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
+             length(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))),1)];
+         
+         %Store summary info
+         OFFDATA.Stats.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
+        clear sig
+    end
+end    
+    
 
+
+%Assess outliers
+allChannelstats=[];
+channelStatsFields=fields(OFFDATA.Stats);
+channelStatsFields=string(channelStatsFields);
+for i = 1:length(channelStatsFields)
+    allChannelstats(:,i)=OFFDATA.Stats.(channelStatsFields(i));
+end
+if size(allChannelstats,2)<size(allChannelstats,1)
+    OFFDATA.Stats.MahalDist=mahal(allChannelstats,allChannelstats);
+else
+    OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
+end
+    
+
+%% Draw figure
 %%%% Make button selection
 plotBG = uibuttongroup(g.Channelstats,...
     'Position',[0.75 0.2 0.22 0.6 ],'Visible','off',...
@@ -102,26 +148,7 @@ uicontrol(plotBG,'Style',...
                   'FontSize',13,...
                   'Tag','5',...
                   'HandleVisibility','off');    
-%LFP info
-try
-    LFPamp=[];
-    LFPampID=[];
-    for i = 1:length(OFFDATA.Channels)
-         sig=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
-         sig=bandpass(sig.(OFFDATA.ChannelsFullName(i)),[0.5 100],256);
-         LFPamp=[LFPamp;single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))'];
-         LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
-             length(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))),1)];
-         
-         %Store summary info
-         OFFDATA.Stats.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
-        clear sig
-    end
-    
-    
+
     uicontrol(plotBG,'Style',...
                   'radiobutton',...
                   'String','LFP amplitude',...
@@ -131,27 +158,13 @@ try
                   'Tag','6',...
                   'HandleVisibility','off'); 
               
-end              
+              
 plotBG.Visible='on';
 
 %Clear temporary variables
 clear PNEtimeTemp
 
 
-
-%Assess outliers
-allChannelstats=[];
-channelStatsFields=fields(OFFDATA.Stats);
-channelStatsFields=string(channelStatsFields);
-for i = 1:length(channelStatsFields)
-    allChannelstats(:,i)=OFFDATA.Stats.(channelStatsFields(i));
-end
-if size(allChannelstats,2)<size(allChannelstats,1)
-    OFFDATA.Stats.MahalDist=mahal(allChannelstats,allChannelstats);
-else
-    OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
-end
-    
 %%%% Plot default graph
 plottingColors=[0    0.4470    0.7410
                        0.3010    0.7450    0.9330
@@ -226,9 +239,15 @@ function CHANNELSTAT_PLOT(source,event)
              xlim([0 length(OFFDATA.Channels)+1])
              
         elseif event.NewValue.Tag=='6'
-             violinplot(LFPamp,LFPampID,...
+            %gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.MeanLFPamp,...
+            %[1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
+            %set(gca, 'XTick', 1:length(OFFDATA.Channels));
+            %xlim([0 length(OFFDATA.Channels)+1])
+            %set(gca, 'XTickLabels', OFFDATA.Channels)
+            %ylabel('LFP amplitude (uV)')
+            violinplot(LFPamp,LFPampID,...
             'ShowData',false,'ViolinAlpha',0.3);
-             ylabel('LFP amplitude');  
+             ylabel('LFP amplitude(uV)');  
              xlim([0 length(OFFDATA.Channels)+1])
        end
 
