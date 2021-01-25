@@ -1,5 +1,5 @@
 function OFFAD_scroll(OFFDATA); 
-profile on
+
 %Plotting
 g.Scroll = figure('Units','points', ...
     'Color','white',...
@@ -206,8 +206,6 @@ drawOFFP
 
 end
 
-profile off
-profile viewer
 end
 %clear PNEtmp
 %clear LFPtmp

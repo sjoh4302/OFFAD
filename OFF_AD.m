@@ -1,3 +1,7 @@
+%%% Requires:
+% - Statistics and Machine learning toolbox
+% - Signal processing toolbox
+
 function OFF_AD( arg )
 if nargin < 1
     hh = findobj('tag', 'OFFAD');

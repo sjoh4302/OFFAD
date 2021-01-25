@@ -71,16 +71,17 @@ try
          if OFFDATA.FiltLPF==1
              sig=filtfilt(bb1,aa1,sig);
          end
-         LFPamp=[LFPamp;single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))'];
+         LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))';
+         LFPampTmp=LFPampTmp(round(length(LFPampTmp)/2000):end-round(length(LFPampTmp)/2000)); %Ignore edge LFP filtering effects by using middle 99.9% of OFF periods
+         LFPamp=[LFPamp;LFPampTmp];
          LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
-             length(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))),1)];
+             length(LFPampTmp),1)];
          
          %Store summary info
          OFFDATA.Stats.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
-        clear sig
+        clear sig LFPampTmp
     end
 end    
     
@@ -253,4 +254,5 @@ function CHANNELSTAT_PLOT(source,event)
 
         
 end
+
 end

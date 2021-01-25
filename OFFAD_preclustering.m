@@ -89,8 +89,8 @@ uicontrol(g.Preclustering,'Style', 'pushbutton','String','Return',...
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Done',...
     'FontWeight','bold','FontSize',12,...
     'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
-    'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
-%close([findobj(''tag'', ''OFFAD_IMPORT'')])
+    'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_IMPORT'')]);close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
+
 
 %%% Create button to re-cluster channel
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Recluster',...
@@ -117,8 +117,8 @@ function plotClustNum(~,~)
        end
        drawnow
  %%% load pNe signal
-        channelString=axesHandles(1).String
-        channelValue=axesHandles(1).Value
+        channelString=axesHandles(1).String;
+        channelValue=axesHandles(1).Value;
         if iscell(channelString)==0
             channelString={channelString};
         end
