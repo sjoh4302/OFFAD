@@ -68,7 +68,7 @@ try
     for i = 1:length(OFFDATA.Channels)
          sig=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
          sig=sig.(OFFDATA.ChannelsFullName(i));
-         if OFFDATA.FiltLPF==1
+         if OFFDATA.FiltLFP==1
              sig=filtfilt(bb1,aa1,sig);
          end
          LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...

@@ -24,7 +24,7 @@ OFFDATA.PNEunit=importDataVar(14).String(importDataVar(14).Value);
 OFFDATA.LFPpathin=importDataVar(16).String;
 OFFDATA.LFPfs=double(string(importDataVar(19).String));
 OFFDATA.LFPunit=importDataVar(21).String(importDataVar(21).Value);
-OFFDATA.FiltLPF=double(importDataVar(23).Value);
+OFFDATA.FiltLFP=double(importDataVar(23).Value);
 OFFDATA.clustEval=[importDataVar(25).String(importDataVar(25).Value)];
 OFFDATA.ignoreChannels=double(string(regexp(importDataVar(27).String,'\d*','match')));
 OFFDATA.clustVar1Select=double(string(importDataVar(29).Value)); %1 = amplitude, 2=power
@@ -196,6 +196,8 @@ elseif OFFDATA.clustVar2Select==2
 end
 
 %% Cluster sample data 
+
+
     randPoints=randi(length(clusterVar1),10000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
     allIDX=[];
