@@ -1,13 +1,13 @@
-# OffPeriodDetection
+# OFFAD (Off period automated detection)
 
-# What is EEGLAB?
-EEGLAB is an open source signal processing environment for electrophysiological signals running on Matlab and Octave (command line only for Octave). This folder contains original Matlab functions from the EEGLAB (formerly ICA/EEG) Matlab toolbox, all released under the Gnu public license (see eeglablicence.txt). See the EEGLAB tutorial and reference paper (URLs given below) for more information.
+# What is OFFAD?
+OFFAD is an open source signal processing GUI for detecting OFF periods: periods of generalized neuronal silence associated with NREM slow waves. The pipeline consists of a Guassian clustering step followed by a visual and statistical presentation of the resulting OFF periods to allow further curation by the user.  
 
-# Installing/cloning
-**Recommended:** Download the official EEGLAB release from https://sccn.ucsd.edu/eeglab/download.php
+# Installing
+You can clone this repository.
 
-**Do not download a ZIP file directly from GIT as it will not contain EEGLAB submodules**. Instead clone the reposity while pulling EEGLAB sub-modules.
-
+# Starting OFFAD
+1. Open MATLAB in 
 ```
 git clone --recurse-submodules https://github.com/sccn/eeglab.git
 ```
