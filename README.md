@@ -45,4 +45,32 @@ A new window will appear. This is the preclustering window which gives the user 
 # C) Clustering
 A warning window will appear to inform the user that clustering is taking place. Each channel is clustered seperately. The number of GMM components (n) will be the number identified in the preclustering stage. Any channels not viewed in th preclustering stage will have their optimal GMM component number determined automatically. A GMM model with n components will then computed from a random sub-sample of the NREM data, the size of which was chosen by the user. Next, the full dataset will be assigned into clusters based on their component posterior probability (i.e likelhood of belonging to each component). Data points belonging to the component with the lowest mean in clustering variables 1 and 2 are classified as OFF-period points. All other data points belonging to all other components are classified as ON-period points. 
 
-# D) Summary statistics
+# D) Main menu 
+After clustering, the main menu of the OFFAD GUI will appear, with the name of the current study diaplayed at the top. The following options are available.
+1. **Scroll through OFF period** - Open a new GUI that allows users to view the detected OFF periods in the original time series data 
+2. **View channel statistics** - Open a new window containing statistics pertaining to the detected OFF periods
+3. **Save to current folder** - Exports the detected OFF period data in the OFFDATA structure to the current directory with the dataset name used as the save name
+4. **Save to new folder** - Opens a file navigation window to export the OFFDATA to a new directory and with a name of the user's choice
+
+# E) Scroll
+This is a GUI that allows users to scroll through the dataset with the OFF-periods highlighted in RED for each channel. pNe (and LFP if available) is plotted in seconds from the recording start. The text box at centre-bottom displays the current start seconds. The time displayed can be changed by typing into this box or pressing the arrows either side. **<** will return the time by 1 epoch and **>** will advance the time by 1 epoch. A number of options are availble to the user to change the way data are displayed. The scale of the pNe (and LFP if available) data in the Y-axis can be adjusted using the text entry boxes at the bottom corners of the GUI. Users can also adjust the structure of OFF-periods. The slider at bottom left entitled **Minimum off-period duration (ms)** allows users to remove OFF-periods lasting less than the selected length in ms. The threshold can be changed by moving the slider of entering text into the text box. The slider at bottom rigtht entitled **Maximum off-period interuption (ms)** allows users to combine OFF-periods seperated by an interuption less than the selected length in ms. The threshold can be changed by moving the slider of entering text into the text box. The interuption selector takes precedence over the duration selector.
+
+# F) Channel statistics
+This page presents the user with summary statistics pertaining to the OFF-period detection for each channel to be used for analysis or idetification of outlier channels. The following statistics are shown, either as scatter plots or violin plots which show the distribution of points as well as the median.
+-  **Mahanlobis distance** -  This is a metric used to judge outlier channels. It is caluclated by comparing the value of channel to the mean of all channels for each summary statistics, such the a high mahanlobis distance signifies a channel whose statistics are far from the cross-channel average.
+- **Off period duration** - The distribution of detected OFF-period lengths in ms for each channels
+- **Off period number** -  The total number of OFF-periods detected in each channels
+- **Off period occupancy** - The summed duration of alll detected OFF-periods in each channel
+- **Channel coherence** - The distribution of cross-channel coherence values for each channels compared with all other channels, where a coherence of 1 signifies that all OFF-period points are shared between the channels and 0 signifies that no OFF-period points are shared between channels. 
+- **LFP amplitude** - The distribution of LFP amplitudes in ms for detected OFF-period points for each channel. The LFP signal is found by detecting the nearest LFP point in time to each OFF-period point. Shared points are removed and the amplitude of the remaining points is found.
+
+
+# Exported data structure
+The final data saved from the OFFAD GUI is contained in the OFFDATA structure. THe OFFDATA structure has the following fields
+- **Fields 1:19** - contains the import data specified by the user in 
+- **Field 20: OptimalK** - Contains the optimal number of GMM components for each channel as suggested by the chosen clustering evaluation method
+- **Field 21: StartOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the start point of an OFF period
+- **Field 22: EndOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the end point of an OFF period
+- **Field 23: AllOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is a point within an OFF period
+- **Field 24: Stats** - Contains the following summary information for each channel: Mean OFF-period duration, Mean channel OFF-period coherence, Number of OFF-periods, Total recording OFF-period time, (optional) Mean OFF-period LFP amplitude, Mahanlobis distance#
+
