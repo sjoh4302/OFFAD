@@ -237,7 +237,9 @@ end
 functionTime=toc(functionTimer);
 display(['Total clustering time = ',char(string(functionTime)),' sec'])
 
-[OFFDATA]=OFFAD_channelstats(OFFDATA);
+%Return to main menu    
+OFF_AD('redraw');
+set(findobj('Tag','OFFAD_CLUSTER'),'Visible','Off')
 
 
 %n=10;
