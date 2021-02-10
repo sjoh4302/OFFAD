@@ -200,12 +200,12 @@ OFF_clust_points=allPoints(IDX==offCluster);
 OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
 numOFF=length(OFFgaps); %number of OFF periods
 %loop going through all OFF periods
-for ep = 1:numOFF
+for ep = 1:numOFF+1
     if ep==1
         StartOFF(ep)=OFF_clust_points(1); %find start point of this OFF period
         EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
-    elseif ep==numOFF
-        StartOFF(ep)=OFF_clust_points(OFFgaps(ep)+1); %find start point of this OFF period
+    elseif ep==numOFF+1
+        StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
         EndOFF(ep)=OFF_clust_points(end); %find last point of this OFF period
     else
         StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
