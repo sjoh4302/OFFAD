@@ -238,8 +238,9 @@ functionTime=toc(functionTimer);
 display(['Total clustering time = ',char(string(functionTime)),' sec'])
 
 %Return to main menu    
+close(findobj('Tag','OFFAD_IMPORT'));
 OFF_AD('redraw');
-set(findobj('Tag','OFFAD_CLUSTER'),'Visible','Off')
+set(findobj('Tag','OFFAD_CLUSTER'),'Visible','Off');
 
 
 %n=10;

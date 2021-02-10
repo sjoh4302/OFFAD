@@ -1,4 +1,7 @@
-function [OFFDATA]=OFFAD_preclustering(importDataVar)
+function [OFFDATA,test]=OFFAD_preclustering(importDataVar)
+
+set(findobj('Tag','OFFAD_IMPORT'),'Visible','Off')
+
 %Plotting
 g.Preclustering = figure('Units','points', ...
 ... %	'Colormap','gray', ...
@@ -9,8 +12,10 @@ g.Preclustering = figure('Units','points', ...
 	'Position',[200 100 800 450], ...
     'Toolbar','none',...
     'Menubar','none',...
-	'Tag','OFFAD_PRECLUSTER');
-
+	'Tag','OFFAD_PRECLUSTER',...
+    'CloseRequestFcn',['set(findobj(''Tag'',''OFFAD_IMPORT''),''Visible'',''On'');'...
+    'close(findobj(''Tag'',''OFFAD_PRECLUSTER''))']);
+     
 %Create empty directory to hold clustering information
 OFFDATA=[];
 %Add input variable from OFFAD_importdata
@@ -83,14 +88,15 @@ numepochs=length(cleanepochs);
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Return',...
     'FontWeight','bold','FontSize',12,...
     'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
-    'Position',[0 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);');
+    'Position',[0 0 0.08 0.1],'Callback','uiresume');
 
 %%% Create button to continue with clustering
-uicontrol(g.Preclustering,'Style', 'pushbutton','String','Done',...
+done=uicontrol(g.Preclustering,'Style', 'pushbutton','String','Done',...
     'FontWeight','bold','FontSize',12,...
     'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
-    'Position',[0.92 0 0.08 0.1],'Callback','close([findobj(''tag'', ''OFFAD_IMPORT'')]);close([findobj(''tag'', ''OFFAD_PRECLUSTER'')]);[OFFDATA]=OFFAD_clustering(OFFDATA);');
-
+    'Tag','DoneButton',...
+    'UserData',0,...
+    'Position',[0.92 0 0.08 0.1],'Callback','set(findobj(''Tag'',''DoneButton''),''UserData'',1),uiresume');
 
 %%% Create button to re-cluster channel
 uicontrol(g.Preclustering,'Style', 'pushbutton','String','Recluster',...
@@ -105,11 +111,15 @@ uicontrol(g.Preclustering,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName
     'Position',[0.2 0.95 0.6 0.05],...
     'CreateFcn',@plotClustNum,...
     'Callback',@plotClustNum);
+
  
+uiwait
+test=get(findobj('Tag','DoneButton'),'UserData');
+set(findobj('Tag','OFFAD_IMPORT'),'Visible','On')
+close(findobj('Tag','OFFAD_PRECLUSTER'))
 
 
-
-function plotClustNum(~,~)
+function plotClustNum(src,~)
        axesHandles=get(findobj('Tag','OFFAD_PRECLUSTER'),'Children');
        try
            cla(axesHandles(5));
@@ -272,6 +282,7 @@ end
 %     gscatter(sampCluster(:,1),sampCluster(:,2),IDX)
 %     xlim([clusterAxes.XLim(1),clusterAxes.XLim(2)])
 %     ylim([clusterAxes.YLim(1),clusterAxes.YLim(2)])
+
 
 end
 end
