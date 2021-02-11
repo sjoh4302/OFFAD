@@ -208,7 +208,7 @@ end
 %% Cluster sample data 
 
 
-    randPoints=randi(length(clusterVar1),length(vigState)*4*OFFDATA.PNEfs*(1/1000),1);
+    randPoints=randi(length(clusterVar1),round(length(vigState)*4*OFFDATA.PNEfs*(1/1000)),1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
     allIDX=[];
     %allIDX2=[];
