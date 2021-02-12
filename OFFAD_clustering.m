@@ -79,14 +79,19 @@ for chanNum = 1:length(OFFDATA.ChannelsFullName)
         %%% load pNe signal
         PNE = load(OFFDATA.PNEpathin,'-mat',chan);
         PNE = PNE.(chan);
+        
+        if OFFDATA.PNEunit=="uV*1000000" %Convert to uV
+            PNE=PNE/1000000;
+        end
+        
         PNE = int16(PNE);
+        
+        if length(unique(PNE))<4
+            warning('Wrong amplitude units specified')
+        end
         
         PNE = abs(PNE); %take absolute values 
         
-        if OFFDATA.PNEunit=="V" %Convert to uV
-            PNE=PNE/1000000;
-        end
-                        
         %%% collect pNe signal for all episodes of chosen vigilance state
         vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
         vsPNEtime=NaN(1,length(PNE)); %NaN vectors to be filled with recording time values

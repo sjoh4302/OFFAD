@@ -69,7 +69,10 @@ try
          sig=load(OFFDATA.LFPpathin,OFFDATA.ChannelsFullName(i));
          sig=sig.(OFFDATA.ChannelsFullName(i));
          if OFFDATA.FiltLFP==1
-             sig=filtfilt(bb1,aa1,sig);
+             sig=filtfilt(bb1,aa1,double(sig));
+             %DC offset
+             sig = sig-mean(sig);
+       
          end
          LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
              +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))';
@@ -95,7 +98,12 @@ for i = 1:length(channelStatsFields)
     allChannelstats(:,i)=OFFDATA.Stats.(channelStatsFields(i));
 end
 if size(allChannelstats,2)<size(allChannelstats,1)
-    OFFDATA.Stats.MahalDist=mahal(allChannelstats,allChannelstats);
+    for i = 1:size(allChannelstats,2)
+        mahalStore(:,i)=mahal(allChannelstats(:,i),allChannelstats(:,i));
+    end
+    mahalStore
+    OFFDATA.Stats.MahalDist=mean(mahalStore,2);
+    %OFFDATA.Stats.MahalDist=mahal(allChannelstats(:,1:5),allChannelstats(:,1:5));
 else
     OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
 end
