@@ -336,6 +336,8 @@ end
     ylabel('Count')
     ax=gca;
     ax.YScale='log';
+    legend('Original','Adjusted')
+    text(0.2,0.8,'Off periods','Units','normalized')
     
     %%%Plot ON periods histogram
     [oldON,oldBins]=histcounts((find(OFFDATA.StartOP(:,i),length(find(OFFDATA.StartOP(:,i)))-1,'last')-...
@@ -352,6 +354,7 @@ end
     xlabel('Duration (ms)')
     ax=gca;
     ax.YScale='log';
+    text(0.2,0.8,'On periods','Units','normalized')
     
     set(findobj('Tag','OFFAD_SCROLL'),'UserData',0)
     clear chooseON chooseONstart chooseONend adjOFFStarts adjOFFEnds
