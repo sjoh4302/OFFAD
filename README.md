@@ -17,11 +17,12 @@ OFF_AD
 
 # Using OFFAD
 Upon opening OFFAD, users will be presented with the following choices
-- **Open new study** - Select this option to begin clustering a new dataset
+- **New study (no presets)** - Select this option to begin clustering a new dataset
+- **New study (use presets)** - Select this option to cluster new data using the clustering settings from a previous study
 - **Load previous study** - Select this option to view the clustering results from a past dataset and adjust selection of OFF periods. Users will be presented with a file navigation window with which to select a previously saved **OFFDATA** variable. To learn more of this choice, skip to section E
 
 # A) Loading data
-After choosing to begin a new study, users will be prompted to enter a number of details to set up the clustering process
+After choosing to begin a new study, users will be prompted to enter a number of details to set up the clustering process.
 - **Dataset name** - Enter a name for this study
 - **VSspec pathin** - Select the matlab workspace containing the scored vigilance states for this dataset. Each state should be represented by its own array and named as following: 'w'=wake, 'nr'=NREM, 'r'=REM, 'mt'=movement
 - **Epoch length** - length of scoring epochs in seconds
@@ -37,13 +38,15 @@ After choosing to begin a new study, users will be prompted to enter a number of
 -**Clustering variables** - Select the two variables with which to cluster to identify OFF-periods. Default is to use the time series of the smoothed pNe amplitude. Using this option, different smoothing strengths should be chosen for each variable. The second option is to use spectral power of the pNe signal as a variable (NOT RECOMMENDED)
 -**Clustering sample size** - The size of the OFF-period component is computed from a subset of the total data consisting only of pNe data from NREM, then applied to all vigilance states. Choose the percentage of NREM pNe data to use for cluster size selection. A higher precentage will result in a longer clustering phase.
 
+If using presets from a previous study, only some of these variables will be editable.
+
 Once all fields have been correctly filled, select **Done** at the lower right corner of the GUI
 
 # B) Preclustering
-A new window will appear. This is the preclustering window which gives the user a indication of the OFF-period clustering on a subset of the data. A dropdown menu at the top shows the channel currently being analysed. Select which channel to view here. Two subplots will be displayed on the figure. The left subplot shows a density heatmap of the data for channel X in clustering variables 1 and 2. Lighter colours represent areas of high density. Channels with a good signal:noise ratio should show a clear cluster near the origin which represents the low amplitude OFF-periods. The right subplot shows the Gaussian Mixtue Model (GMM) generated from the data in the left plot with n components where n is the optimal number suggested by the clustering evaluation method. The component with the centroid with the lowest values in cluster variables 1 and 2 is shown in red an represents the OFF-period component. If the the red component on the right plot matches the dense OFF-period area of the left subplot, clustering should be succesful. If the clusters do not match, try re-clustering the data. Once you are happy, move to a new channel using the dropdown menu. Once you are happy, select **Done** to move on to the full clustering stage. The optimal component number computed for any of the channels in the preclustering stage will be carried forward. 
+If creating a new study without presets, the next window to appear in the preclustering window. This is a window which gives the user a indication of the OFF-period clustering on a subset of the data. A dropdown menu at the top shows the channel currently being analysed. Select which channel to view here. Two subplots will be displayed on the figure. The left subplot shows a density heatmap of the data for channel X in clustering variables 1 and 2. Lighter colours represent areas of high density. Channels with a good signal:noise ratio should show a clear cluster near the origin which represents the low amplitude OFF-periods. The right subplot shows the Gaussian Mixtue Model (GMM) generated from the data in the left plot with n components where n is the optimal number suggested by the clustering evaluation method. The component with the centroid with the lowest values in cluster variables 1 and 2 is shown in red an represents the OFF-period component. If the the red component on the right plot matches the dense OFF-period area of the left subplot, clustering should be succesful. If the clusters do not match, try re-clustering the data. Once you are happy, move to a new channel using the dropdown menu. Once you are happy, select **Done** to move on to the full clustering stage. The optimal component number computed for any of the channels in the preclustering stage will be carried forward. 
 
 # C) Clustering
-A warning window will appear to inform the user that clustering is taking place. Each channel is clustered seperately. The number of GMM components (n) will be the number identified in the preclustering stage. Any channels not viewed in th preclustering stage will have their optimal GMM component number determined automatically. A GMM model with n components will then computed from a random sub-sample of the NREM data, the size of which was chosen by the user. Next, the full dataset will be assigned into clusters based on their component posterior probability (i.e likelhood of belonging to each component). Data points belonging to the component with the lowest mean in clustering variables 1 and 2 are classified as OFF-period points. All other data points belonging to all other components are classified as ON-period points. 
+After leaving the preclustering window, or the import window if using presets, a warning window will appear to inform the user that clustering is taking place. Each channel is clustered seperately. The number of GMM components (n) will be the number identified in the preclustering stage. Any channels not viewed in th preclustering stage will have their optimal GMM component number determined automatically. A GMM model with n components will then computed from a random sub-sample of the NREM data, the size of which was chosen by the user. Next, the full dataset will be assigned into clusters based on their component posterior probability (i.e likelhood of belonging to each component). Data points belonging to the component with the lowest mean in clustering variables 1 and 2 are classified as OFF-period points. All other data points belonging to all other components are classified as ON-period points. 
 
 # D) Main menu 
 After clustering, the main menu of the OFFAD GUI will appear, with the name of the current study diaplayed at the top. The following options are available.
@@ -68,9 +71,17 @@ This page presents the user with summary statistics pertaining to the OFF-period
 # Exported data structure
 The final data saved from the OFFAD GUI is contained in the OFFDATA structure. THe OFFDATA structure has the following fields
 - **Fields 1:19** - contains the import data specified by the user in 
-- **Field 20: OptimalK** - Contains the optimal number of GMM components for each channel as suggested by the chosen clustering evaluation method
-- **Field 21: StartOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the start point of an OFF period
-- **Field 22: EndOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the end point of an OFF period
-- **Field 23: AllOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is a point within an OFF period
-- **Field 24: Stats** - Contains the following summary information for each channel: Mean OFF-period duration, Mean channel OFF-period coherence, Number of OFF-periods, Total recording OFF-period time, (optional) Mean OFF-period LFP amplitude, Mahanlobis distance#
+- **OptimalK** - Contains the optimal number of GMM components for each channel as suggested by the chosen clustering evaluation method
+- **StartOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the start point of an OFF period
+- **EndOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is the end point of an OFF period
+- **AllOP** - An M x N sparse matrix where M is the number of pNe samples in the recording and N is the number of channels selected for OFF period detection. Each entry in the matrix is a point within an OFF period
+- **StatsOP** - Contains the following summary information for each channel: Mean OFF-period duration, Mean channel OFF-period coherence, Number of OFF-periods, Total recording OFF-period time, (optional) Mean OFF-period LFP amplitude, Mahanlobis distance. This will only appear if the **Compute channel statistics** button has been pressed
+
+If the user has adjusted the OFF-periods in the scrolling window using the minimum OFF-period duration and maximum permitted OFF-period interuption threshold, the following fields will also be present in the OFFDATA structure
+- **StartOPadjusted** - See above
+- **EndOPadjusted** - See above
+- **AllOPadjusted** - See above
+- **OFFthresh** - Minimum OFF-period duration threshold
+- **ONthresh** - Maximum permitted OFF-period interuption threshold
+- **StatsOPadjusted** - See above 
 
