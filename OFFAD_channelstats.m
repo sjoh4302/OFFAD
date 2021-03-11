@@ -40,15 +40,24 @@ uicontrol(g.Channelstats,'Style', 'text','String',displayName,...
 if plotType==0
     switchName='Switch to adjusted';
     switchCallback='close(findobj(''Tag'',''OFFAD_CHANNELSTATS''));[OFFDATA]=OFFAD_channelstats(OFFDATA,1);';
+    visibility='on';
 elseif contains(selectData,'adjusted') 
     switchName='Switch to original';
     switchCallback='close(findobj(''Tag'',''OFFAD_CHANNELSTATS''));[OFFDATA]=OFFAD_channelstats(OFFDATA,0);';
+    visibility='on';
+else
+    switchName='Switch to original';
+    switchCallback='close(findobj(''Tag'',''OFFAD_CHANNELSTATS''));[OFFDATA]=OFFAD_channelstats(OFFDATA,0);';
+    visibility='off';
 end
+
 uicontrol(g.Channelstats,'Style', 'pushbutton','String',switchName,...
 'FontSize',8,...
+'Visible',visibility,...
 'Units','normalized',...
 'Callback',switchCallback,...
 'Position',[0.79 0.8 0.14 0.04])
+
 %% Compute statistics
 
 %%% Generate temporary variable
@@ -109,12 +118,15 @@ try
              sig = sig-mean(sig);
        
          end
-         LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))))';
-         LFPampTmp=LFPampTmp(round(length(LFPampTmp)/2000):end-round(length(LFPampTmp)/2000)); %Ignore edge LFP filtering effects by using middle 99.9% of OFF periods
-         LFPamp=[LFPamp;LFPampTmp];
-         LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
-             length(LFPampTmp),1)];
+         
+         try
+             LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
+                 +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))))';
+             LFPampTmp=LFPampTmp(round(length(LFPampTmp)/2000):end-round(length(LFPampTmp)/2000)); %Ignore edge LFP filtering effects by using middle 99.9% of OFF periods
+             LFPamp=[LFPamp;LFPampTmp];
+             LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
+                 length(LFPampTmp),1)];
+         end
          
          %Store summary info
          OFFDATA.(['Stats',selectData]).MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
@@ -124,7 +136,6 @@ try
 end    
     
 
-
 %Assess outliers
 allChannelstats=[];
 channelStatsFields=fields(OFFDATA.(['Stats',selectData]));
@@ -132,12 +143,15 @@ channelStatsFields=string(channelStatsFields);
 for i = 1:length(channelStatsFields)
     allChannelstats(:,i)=OFFDATA.(['Stats',selectData]).(channelStatsFields(i));
 end
-if size(allChannelstats,2)<size(allChannelstats,1)
+%Find nan channels
+useChan=find(~isnan(allChannelstats(:,1)));
+
+if size(allChannelstats,2)<length(useChan)
     for i = 1:size(allChannelstats,2)
-        mahalStore(:,i)=mahal(allChannelstats(:,i),allChannelstats(:,i));
+        mahalStore(:,i)=mahal(allChannelstats(useChan,i),allChannelstats(useChan,i));
     end
-    mahalStore
-    OFFDATA.(['Stats',selectData]).MahalDist=mean(mahalStore,2);
+    OFFDATA.(['Stats',selectData]).MahalDist=nan(1,size(allChannelstats,1));
+    OFFDATA.(['Stats',selectData]).MahalDist(useChan)=mean(mahalStore,2);
     %OFFDATA.Stats.MahalDist=mahal(allChannelstats(:,1:5),allChannelstats(:,1:5));
 else
     OFFDATA.(['Stats',selectData]).MahalDist=ones(size(allChannelstats,1),1);

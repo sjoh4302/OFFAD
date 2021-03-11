@@ -168,7 +168,9 @@ clear PNE
 clear vsPNE
 
 %% Gaussian clustering
-
+%%%Create try/catch loop in case of ill-conditioning errors
+try
+    
 if OFFDATA.OptimalK(chanNum)==0
     randPoints=randi(length(clusterVar1),10000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
@@ -192,7 +194,6 @@ sampData=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
 options = statset('MaxIter',1000,'TolFun',1e-5);
 GMModel = fitgmdist(sampData,OFFDATA.OptimalK(chanNum),'Replicates',20,'Options',options);
 IDX = cluster(GMModel,allData);
-
 
 %% Find off periods 
 %profile on
@@ -218,6 +219,14 @@ for ep = 1:numOFF+1
     end
     
    
+end
+
+
+catch
+    StartOFF=[];
+    EndOFF=[];
+    OFF_clust_points=[];
+    
 end
 
 %Store START OFF-P data

@@ -355,7 +355,8 @@ for i = 1:numChan
 end
 
 %%%%%%% Draw ON-OFF period histograms
- if get(findobj('Tag','OFFAD_SCROLL'),'UserData')==1;
+try
+if get(findobj('Tag','OFFAD_SCROLL'),'UserData')==1;
      % Recalculate OFF start and end time
      for i = get(findobj('Tag','histChan'),'Value')
          adjOFFStarts=find(OFFDATA.StartOP(:,i));
@@ -409,8 +410,14 @@ end
     
     set(findobj('Tag','OFFAD_SCROLL'),'UserData',0)
     clear chooseON chooseONstart chooseONend adjOFFStarts adjOFFEnds
- end
+end
  
+catch
+     subplot('Position',[0.91 0.56 0.08 0.38])
+     cla
+     subplot('Position',[0.91 0.15 0.08 0.38])
+     cla
+end 
  
 %Plot current epoch vig state info
 set(findobj(get(findobj('Tag','hypnogram'),'Children'),'Type','ConstantLine'),...
