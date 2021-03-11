@@ -1,5 +1,4 @@
-function [OFFDATA]=OFFAD_channelstats(OFFDATA)
-
+function [OFFDATA]=OFFAD_channelstats(OFFDATA,plotType)
 %Close loading window
 g.Cluster = findobj('tag', 'OFFAD_CLUSTER');
 close(g.Cluster)
@@ -14,7 +13,43 @@ g.Channelstats = figure('Units','points', ...
 	'Position',[200 100 800 450], ...
     'Tag','OFFAD_CHANNELSTATS');
 drawnow 
-%% Compute statistics (if missing)
+
+%% Decide if plotting original or adjusted OFF period data
+if plotType==1;
+    if isfield(OFFDATA,'StartOPadjusted')
+        selectData='OPadjusted';  
+    else
+        selectData='OP';
+    end
+else
+    selectData='OP';
+end
+
+%%% Display plotting settings
+if contains(selectData,'adjusted')
+    displayName='Adjusted';
+else
+    displayName='Original';
+end
+uicontrol(g.Channelstats,'Style', 'text','String',displayName,...
+    'FontSize',20,...
+    'Units','normalized',...
+    'Position',[0.72 0.8 0.28 0.1])
+    
+%%% Add switch data type button
+if plotType==0
+    switchName='Switch to adjusted';
+    switchCallback='close(findobj(''Tag'',''OFFAD_CHANNELSTATS''));[OFFDATA]=OFFAD_channelstats(OFFDATA,1);';
+elseif contains(selectData,'adjusted') 
+    switchName='Switch to original';
+    switchCallback='close(findobj(''Tag'',''OFFAD_CHANNELSTATS''));[OFFDATA]=OFFAD_channelstats(OFFDATA,0);';
+end
+uicontrol(g.Channelstats,'Style', 'pushbutton','String',switchName,...
+'FontSize',8,...
+'Units','normalized',...
+'Callback',switchCallback,...
+'Position',[0.79 0.8 0.14 0.04])
+%% Compute statistics
 
 %%% Generate temporary variable
 exampleObject = matfile(OFFDATA.PNEpathin);
@@ -26,20 +61,20 @@ clear PNElength exampleObject
 OFFdurations=[];
 OFFdurationsID=[];
 for i = 1:length(OFFDATA.Channels)
-   start_end=[PNEtimeTemp(find(OFFDATA.StartOP(:,i)==1)),...
-       PNEtimeTemp(find(OFFDATA.EndOP(:,i)==1))];
+   start_end=[PNEtimeTemp(find(OFFDATA.(['Start',selectData])(:,i)==1)),...
+       PNEtimeTemp(find(OFFDATA.(['End',selectData])(:,i)==1))];
    OFFdurations=[OFFdurations; (diff(start_end,1,2)+1/OFFDATA.PNEfs)*1000];
    OFFdurationsID=[OFFdurationsID; repmat(OFFDATA.Channels(i),length(start_end),1)];
    %Store summary info
-   OFFDATA.Stats.MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.PNEfs)*100);
+   OFFDATA.(['Stats',selectData]).MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.PNEfs)*100);
    clear start_end
 end
 
 %%%%%%% Channel coherence plot 
 for i = 1:length(OFFDATA.Channels)
     for j = 1:length(OFFDATA.Channels)
-       coherenceMat(i,j)=length(intersect(PNEtimeTemp(OFFDATA.AllOP(:,i)),PNEtimeTemp(OFFDATA.AllOP(:,j))))...
-           /sum(OFFDATA.AllOP(:,i));
+       coherenceMat(i,j)=length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,j))))...
+           /sum(OFFDATA.(['All',selectData])(:,i));
     
     end
 end
@@ -47,14 +82,14 @@ coherenceMat(coherenceMat==1)=NaN;
 coherence=reshape(coherenceMat,[],1);
 coherenceID=reshape(repmat(OFFDATA.Channels,length(OFFDATA.Channels),1),[],1);
 %Store summary info
-OFFDATA.Stats.MeanCoherence=nanmean(coherenceMat,2);
+OFFDATA.(['Stats',selectData]).MeanCoherence=nanmean(coherenceMat,2);
 clear coherenceMat
 
 %%%%%%%%% Off period number
-OFFDATA.Stats.OPnumber=full(sum(OFFDATA.StartOP))';
+OFFDATA.(['Stats',selectData]).OPnumber=full(sum(OFFDATA.(['Start',selectData])))';
 
 %%%%%%%%% Off period occupancy time
-OFFDATA.Stats.OPoccupancy_time=hours(seconds(sum(OFFDATA.AllOP/OFFDATA.PNEfs)))';
+OFFDATA.(['Stats',selectData]).OPoccupancy_time=hours(seconds(sum(OFFDATA.(['All',selectData])/OFFDATA.PNEfs)))';
 
 %%%%%%%%% Optional LFP info
 try
@@ -74,38 +109,38 @@ try
              sig = sig-mean(sig);
        
          end
-         LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))))';
+         LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))))';
          LFPampTmp=LFPampTmp(round(length(LFPampTmp)/2000):end-round(length(LFPampTmp)/2000)); %Ignore edge LFP filtering effects by using middle 99.9% of OFF periods
          LFPamp=[LFPamp;LFPampTmp];
          LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
              length(LFPampTmp),1)];
          
          %Store summary info
-         OFFDATA.Stats.MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.AllOP(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.AllOP(:,i))/(1/OFFDATA.LFPfs)))));
+         OFFDATA.(['Stats',selectData]).MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
+             +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))));
         clear sig LFPampTmp
     end
 end    
     
 
-%if isfield(OFFDATA.Stats,'MahalDist')==0
+
 %Assess outliers
 allChannelstats=[];
-channelStatsFields=fields(OFFDATA.Stats);
+channelStatsFields=fields(OFFDATA.(['Stats',selectData]));
 channelStatsFields=string(channelStatsFields);
 for i = 1:length(channelStatsFields)
-    allChannelstats(:,i)=OFFDATA.Stats.(channelStatsFields(i));
+    allChannelstats(:,i)=OFFDATA.(['Stats',selectData]).(channelStatsFields(i));
 end
 if size(allChannelstats,2)<size(allChannelstats,1)
     for i = 1:size(allChannelstats,2)
         mahalStore(:,i)=mahal(allChannelstats(:,i),allChannelstats(:,i));
     end
     mahalStore
-    OFFDATA.Stats.MahalDist=mean(mahalStore,2);
+    OFFDATA.(['Stats',selectData]).MahalDist=mean(mahalStore,2);
     %OFFDATA.Stats.MahalDist=mahal(allChannelstats(:,1:5),allChannelstats(:,1:5));
 else
-    OFFDATA.Stats.MahalDist=ones(size(allChannelstats,1),1);
+    OFFDATA.(['Stats',selectData]).MahalDist=ones(size(allChannelstats,1),1);
 end
 %end    
 
@@ -184,7 +219,7 @@ plottingColors=[0    0.4470    0.7410
                        0.9290    0.6940    0.1250];
 subplot('position',[0.07 0.12 0.65 0.8])
 set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.MahalDist,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.(['Stats',selectData]).MahalDist,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -207,7 +242,7 @@ function CHANNELSTAT_PLOT(source,event)
        
        if   event.NewValue.Tag=='1'
             set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.MahalDist,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.(['Stats',selectData]).MahalDist,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -225,7 +260,7 @@ function CHANNELSTAT_PLOT(source,event)
             
        elseif event.NewValue.Tag=='3'
             set(gca,'ColorOrder',plottingColors)
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.OPnumber,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.(['Stats',selectData]).OPnumber,...
                  [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])
@@ -234,7 +269,7 @@ function CHANNELSTAT_PLOT(source,event)
             set(findobj('parent',gcf,'type', 'Axes'),'YTickLabel',get(findobj('parent',gcf,'type', 'Axes'),'YTick'))
 
        elseif event.NewValue.Tag=='4'
-            gscatter([1:length(OFFDATA.Channels)],OFFDATA.Stats.OPoccupancy_time,...
+            gscatter([1:length(OFFDATA.Channels)],OFFDATA.(['Stats',selectData]).OPoccupancy_time,...
                 [1:length(OFFDATA.Channels)],plottingColors,[],30,'off');
             set(gca, 'XTick', 1:length(OFFDATA.Channels));
             xlim([0 length(OFFDATA.Channels)+1])

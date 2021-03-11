@@ -42,6 +42,11 @@ for i = 1:numChan
             adjOFFall=[adjOFFall,[adjOFFStarts(k):adjOFFEnds(k)]];
         end
         
+        %Store OFF duration threshold
+        OFFDATA.OFFthresh=str2num(minDur);
+        
+        %Store ON duration threshold
+        OFFDATA.ONthresh=str2num(maxInt);
         
         %Store START OFF-P data
         OFFDATA.StartOPadjusted(:,numChan)=sparse(adjOFFStarts,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFStarts));
