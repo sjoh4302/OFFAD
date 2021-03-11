@@ -1,6 +1,7 @@
 function OFFAD_scroll(OFFDATA); 
 %profile on
-%Plotting
+
+%%% Figure plotting
 g.Scroll = figure('Units','points', ...
     'Color','white',...
 	'PaperPosition',[18 180 576/2 432], ...
@@ -9,7 +10,10 @@ g.Scroll = figure('Units','points', ...
 	'numbertitle', 'off', ...
 	'Position',[200 100 800 450], ...
     'UserData',1,...
+    'Menubar','none',...
     'Tag','OFFAD_SCROLL');
+
+drawnow
 
 subplot('Position',[0.0 0 0.06 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
 xlimPNE=get(gca,'XLim');
@@ -25,7 +29,6 @@ ht = text(0.8*xlimLFP(1)+0.8*xlimLFP(2),0.5*ylimLFP(1)+0.5*ylimLFP(2),['LFP (', 
 set(ht,'Rotation',90)
 set(ht,'FontSize',12)
 
-drawnow
 
 PNEtmp=load(OFFDATA.PNEpathin,OFFDATA.ChannelsFullName{:});
 PNEexampleObject = matfile(OFFDATA.PNEpathin);
@@ -49,6 +52,41 @@ if isempty(OFFDATA.LFPpathin)==0
     LFPlength=size(LFPexampleObject,OFFDATA.ChannelsFullName(1),2);
 end
 
+%%% Generate hypnogram
+allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/4),1));
+allCol=repmat([0,0,0],length(allEpoch),1);
+vigStateNames={'w','w1','mt','r','r3','nr','nr2'};
+vigInf=load(OFFDATA.VSpathin,vigStateNames{:});
+allEpoch(vigInf.(vigStateNames{6}))='N'; allEpoch(vigInf.(vigStateNames{7}))='N'; %NREM
+allEpoch(vigInf.(vigStateNames{4}))='R'; allEpoch(vigInf.(vigStateNames{5}))='R'; %REM
+allEpoch(vigInf.(vigStateNames{1}))='W'; allEpoch(vigInf.(vigStateNames{2}))='W'; allEpoch(vigInf.(vigStateNames{3}))='W'; %Wake
+
+%Give each state a color
+allCol(allEpoch=='W',3)=1;
+allCol(allEpoch=='R',2)=0.7;
+allCol(allEpoch=='N',3)=0;
+
+subplot('Position',[0.08 0.92 0.76 0.06]);
+scatter(1:ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen),categorical(allEpoch),10,allCol,'.')
+set(gca,'Tag','hypnogram')
+set(gca,'xtick',[])
+set(gca,'xcolor',[1,1,1])
+set(gca,'xlim',[0,ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen)])
+xline(gca,1,'LineWidth',2,'Color',allCol(1,:))
+
+uicontrol(g.Scroll,'Style', 'text','String',string(allEpoch(1)),...
+    'FontWeight','bold','FontSize',35,...
+    'Units','normalized',...
+    'ForegroundColor',allCol(1,:),... 
+    'BackgroundColor',[1 1 1],...
+    'Tag','VigState',...
+    'Position',[0.01 0.92 0.06 0.08]);  %Plot current state
+
+clear vigStateNames
+
+
+
+%%% GUI plotting
 %Select PNE scale
 uicontrol(g.Scroll,'Style', 'text','String','PNE max',...
     'FontWeight','bold','FontSize',7,...
@@ -210,15 +248,15 @@ uicontrol(g.Scroll,'Style', 'text','String','Time(s)',...
 
 function drawOFFP(~,~)
 oldTime=str2num(get(findobj('Tag','scrollTime'),'String'));
+newTime=floor(oldTime/OFFDATA.epochLen)*4; %Round to nearest epoch start time
 %Check selected value within bounds
-if oldTime<0
-    newTime=num2str(0);
-    set(findobj('Tag','scrollTime'),'String',newTime);
+if newTime<0
+    newTime=num2str(0);  
 end
-if oldTime>round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5
-    newTime=num2str(round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5);
-    set(findobj('Tag','scrollTime'),'String',newTime);
+if newTime>round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5
+    newTime=num2str(((floor(((length(OFFDATA.AllOP)/OFFDATA.PNEfs)/OFFDATA.epochLen))-1)*4));
 end
+set(findobj('Tag','scrollTime'),'String',newTime); %set new time
 
 %Reset sliders
 set(findobj('Tag','minDur'),'Value',str2num(get(findobj('Tag','minDurVal'),'String')));
@@ -241,8 +279,9 @@ end
 
 
 numChan=length(OFFDATA.ChannelsFullName);
-subplot2=linspace(0.1,0.95,numChan+1);
+subplot2=linspace(0.1,0.90,numChan+1);
 subplot4=(subplot2(2)-subplot2(1))-(subplot2(2)-subplot2(1))/10;
+subplot2=flip(subplot2(1:end-1));
 for i = 1:numChan
     uicontrol(g.Scroll,'Style', 'text','String',OFFDATA.ChannelsFullName(i),...
     'FontWeight','bold','FontSize',10,...
@@ -299,7 +338,7 @@ for i = 1:numChan
     ax=gca;
     ax.XAxis.Exponent=0;
     
-    if i>1
+    if i<numChan
         set(gca,'Xcolor','none')
     end
     
@@ -361,6 +400,15 @@ end
     set(findobj('Tag','OFFAD_SCROLL'),'UserData',0)
     clear chooseON chooseONstart chooseONend adjOFFStarts adjOFFEnds
  end
+ 
+ 
+%Plot current epoch vig state info
+set(findobj(get(findobj('Tag','hypnogram'),'Children'),'Type','ConstantLine'),...
+    'Value',(str2num(get(findobj('Tag','scrollTime'),'String'))/OFFDATA.epochLen)+1)
+set(findobj(get(findobj('Tag','hypnogram'),'Children'),'Type','ConstantLine'),...
+    'Color',allCol((str2num(get(findobj('Tag','scrollTime'),'String'))/OFFDATA.epochLen)+1,:))
+set(findobj('Tag','VigState'),'String',string(allEpoch((str2num(get(findobj('Tag','scrollTime'),'String'))/OFFDATA.epochLen)+1)))
+set(findobj('Tag','VigState'),'ForegroundColor',allCol((str2num(get(findobj('Tag','scrollTime'),'String'))/OFFDATA.epochLen)+1,:))
 
 end
 

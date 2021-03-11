@@ -1,5 +1,4 @@
 function [OFFDATA]=OFFAD_scrollSave(OFFDATA,minDur,maxInt);
-tic
 g.Save = figure('Units','points', ...
 ... %	'Colormap','gray', ...
 	'PaperPosition',[18 180 576/2 432], ...
@@ -56,5 +55,5 @@ for i = 1:numChan
 end        
         
 close(findobj('Tag','OFFAD_SCROLLSAVE'))
-toc
+
 end

@@ -221,10 +221,14 @@ end
     %%%DONT SELECT SHARED COVARIANCE (fails to find off period cluster)
     for i = 1:8
         options = statset('MaxIter',1000,'TolFun',1e-5);
-        GMModels = fitgmdist(sampCluster,i,'Replicates',5,'Options',options);
-        allIDX(:,i)=cluster(GMModels,sampCluster);
-        %allIDX2(:,i)=cluster(GMModels,clusterData2);
+        try
+            GMModels = fitgmdist(sampCluster,i,'Replicates',5,'Options',options);
+            allIDX(:,i)=cluster(GMModels,sampCluster);
+        catch
+            return %If clustering fails, cancel
+        end
     end
+   % if size(allIDX,2)==8 %Only proceed if clustering succesful
     eva = evalclusters(sampCluster,allIDX,string(OFFDATA.clustEval));
     OFFDATA.OptimalK(channelValue)=eva.OptimalK;
     GMModel = fitgmdist(sampCluster,eva.OptimalK,'Replicates',5,'Options',options);
@@ -232,9 +236,9 @@ end
 %% Plot cluster examples
     gmPDF = @(x,y) arrayfun(@(x0,y0) pdf(GMModel,[x0 y0]),x,y);
     subplot(1,2,2)
-    d = 700; % Grid density
-    x1 = linspace(min(clusterVar1), max(clusterVar1), d);
-    x2 = linspace(min(clusterVar2), max(clusterVar2), d);
+    d = 300; % Grid density
+    x1 = linspace(min(clusterVar1), prctile(clusterVar1,99), d);
+    x2 = linspace(min(clusterVar2), prctile(clusterVar2,99), d);
     [x1grid,x2grid] = meshgrid(x1,x2);
     X0 = [x1grid(:) x2grid(:)];
     mahalDist = mahal(GMModel,X0);
@@ -291,4 +295,5 @@ end
 
 
 end
+
 end
