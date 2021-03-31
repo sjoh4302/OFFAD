@@ -274,7 +274,7 @@ set(findobj('Tag','maxInter'),'Value',str2num(get(findobj('Tag','maxInterVal'),'
 
 startSec=str2num(get(findobj('Tag','scrollTime'),'String'));
 startPNE=round(startSec/(1/OFFDATA.PNEfs))+1;
-endPNE=round(startSec/(1/OFFDATA.PNEfs))+2000;
+endPNE=round(startSec/(1/OFFDATA.PNEfs))+ceil(OFFDATA.PNEfs*4);
 
 tmpPNEtime=[startPNE/OFFDATA.PNEfs:1/OFFDATA.PNEfs:endPNE/OFFDATA.PNEfs];
 startLFP=round(mod(startPNE/OFFDATA.PNEfs,1/OFFDATA.LFPfs)+startPNE/OFFDATA.PNEfs/(1/OFFDATA.LFPfs));
@@ -308,14 +308,27 @@ for i = 1:numChan
     %%%%Select which OFF periods to plot (duration/interval criteria)
     tmpOFFStarts=find(OFFDATA.StartOP(startPNE:endPNE,i));
     tmpOFFEnds=find(OFFDATA.EndOP(startPNE:endPNE,i));
-    if ~isempty(tmpOFFStarts) 
-        %Account for end section problem
-        if tmpOFFStarts(1)>tmpOFFEnds(1)
-            tmpOFFEnds=tmpOFFEnds(2:end);
+    
+      
+    if ~isempty(tmpOFFStarts)
+        %%Fix edge window problems
+        %Add previous OFF period before window
+        try
+        tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startPNE-...
+                    find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFStarts];
+        if tmpOFFStarts(2)<tmpOFFEnds(1) 
+             tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
+                    find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
+        end       
+        %Add previous OFF period before window
+        tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
+                     sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
+        if tmpOFFEnds(end-1)>tmpOFFStarts(end)
+            tmpOFFStarts=[tmpOFFStarts;max(find(OFFDATA.StartOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
+                     sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
         end
-        if tmpOFFEnds(end)<tmpOFFStarts(end)
-            tmpOFFStarts=tmpOFFStarts(1:end-1);
         end
+        
         %Remove short gaps
         chooseON=tmpOFFStarts(2:end)-tmpOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
         chooseONstart=~[0;chooseON];
@@ -327,6 +340,11 @@ for i = 1:numChan
         chooseOFF=tmpOFFEnds-tmpOFFStarts+1>(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
         tmpOFFStarts=tmpOFFStarts(chooseOFF);
         tmpOFFEnds=tmpOFFEnds(chooseOFF);
+        
+        %Trim start/end times to window length
+        tmpOFFStarts(tmpOFFStarts<1)=1;
+        tmpOFFEnds(tmpOFFEnds>ceil(OFFDATA.PNEfs*4))=ceil(OFFDATA.PNEfs*4);
+        
         tmpOFFall=[];
         for k = 1:length(tmpOFFStarts)
             tmpOFFall=[tmpOFFall,[tmpOFFStarts(k):tmpOFFEnds(k)]];
@@ -354,6 +372,9 @@ for i = 1:numChan
     
 end
 
+%Set x-axis to show start/end of segment
+set(gca,'XLim',[roundo(tmpPNEtime(1)),round(tmpPNEtime(end))])
+   
 %%%%%%% Draw ON-OFF period histograms
 try
 if get(findobj('Tag','OFFAD_SCROLL'),'UserData')==1;
