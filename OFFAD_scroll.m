@@ -373,7 +373,7 @@ for i = 1:numChan
 end
 
 %Set x-axis to show start/end of segment
-set(gca,'XLim',[roundo(tmpPNEtime(1)),round(tmpPNEtime(end))])
+set(gca,'XLim',[round(tmpPNEtime(1)),round(tmpPNEtime(end))])
    
 %%%%%%% Draw ON-OFF period histograms
 try
