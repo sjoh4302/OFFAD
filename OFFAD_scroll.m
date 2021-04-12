@@ -316,17 +316,19 @@ for i = 1:numChan
         try
         tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startPNE-...
                     find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFStarts];
-        if tmpOFFStarts(2)<tmpOFFEnds(1) 
-             tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
-                    find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
-        end       
-        %Add previous OFF period before window
+            %If window starts in an ON state     
+            if tmpOFFStarts(2)<=tmpOFFEnds(1) 
+                 tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
+                        find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
+            end       
+        %Add next OFF period after window
         tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
                      sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
-        if tmpOFFEnds(end-1)>tmpOFFStarts(end)
-            tmpOFFStarts=[tmpOFFStarts;max(find(OFFDATA.StartOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
-                     sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
-        end
+            %If window ends in ON state
+            if tmpOFFEnds(end-1)>=tmpOFFStarts(end)
+                tmpOFFStarts=[tmpOFFStarts;max(find(OFFDATA.StartOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
+                         sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
+            end
         end
         
         %Remove short gaps

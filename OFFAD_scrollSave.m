@@ -16,12 +16,14 @@ uicontrol(g.Save,'Style', 'text','String','Warning: Saving adjusted OFF periods'
 
 drawnow 
 
+%Initalise/reset adjusted OFF period matrices
 OFFDATA.StartOPadjusted=sparse(repmat(logical(0),length(OFFDATA.StartOP),length(OFFDATA.ChannelsFullName)));
 OFFDATA.EndOPadjusted=sparse(repmat(logical(0),length(OFFDATA.StartOP),length(OFFDATA.ChannelsFullName)));
 OFFDATA.AllOPadjusted=sparse(repmat(logical(0),length(OFFDATA.StartOP),length(OFFDATA.ChannelsFullName)));
 
 numChan=length(OFFDATA.ChannelsFullName);
 for i = 1:numChan
+    
         adjOFFStarts=find(OFFDATA.StartOP(:,i));
         adjOFFEnds=find(OFFDATA.EndOP(:,i));
         %Remove short gaps
@@ -49,13 +51,13 @@ for i = 1:numChan
         OFFDATA.ONthresh=str2num(maxInt);
         
         %Store START OFF-P data
-        OFFDATA.StartOPadjusted(:,numChan)=sparse(adjOFFStarts,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFStarts));
-
+        OFFDATA.StartOPadjusted(:,i)=sparse(adjOFFStarts,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFStarts));
+                
         %Store END OFF-P data
-        OFFDATA.EndOPadjusted(:,numChan)=sparse(adjOFFEnds,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFEnds));
+        OFFDATA.EndOPadjusted(:,i)=sparse(adjOFFEnds,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFEnds));
 
         %Store ALL OFF-P data
-        OFFDATA.AllOPadjusted(:,numChan)=sparse(adjOFFall,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFall));
+        OFFDATA.AllOPadjusted(:,i)=sparse(adjOFFall,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFall));
 
 end        
         
