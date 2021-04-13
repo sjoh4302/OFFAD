@@ -9,7 +9,7 @@ g.Save = figure('Units','points', ...
     'Toolbar','none',...
     'Menubar','none',...
 	'Tag','OFFAD_SCROLLSAVE');
-uicontrol(g.Save,'Style', 'text','String','Warning: Saving adjusted OFF periods',...
+uicontrol(g.Save,'Style', 'text','String','Warning: Storing adjusted OFF periods',...
     'FontWeight','bold','FontSize',22,...
     'Units','normalized',...
     'Position',[0.2 0.2 0.6 0.6]);
@@ -27,14 +27,14 @@ for i = 1:numChan
         adjOFFStarts=find(OFFDATA.StartOP(:,i));
         adjOFFEnds=find(OFFDATA.EndOP(:,i));
         %Remove short gaps
-        chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*str2num(maxInt));
+        chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*maxInt(i));
         chooseONstart=~[0;chooseON];
         chooseONend=~[chooseON;0];
         adjOFFStarts=adjOFFStarts(chooseONstart);
         adjOFFEnds=adjOFFEnds(chooseONend);
         
         %Remove short off-periods
-        chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*str2num(minDur));
+        chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*minDur(i));
         adjOFFStarts=adjOFFStarts(chooseOFF);
         adjOFFEnds=adjOFFEnds(chooseOFF);
        
@@ -45,10 +45,10 @@ for i = 1:numChan
         end
         
         %Store OFF duration threshold
-        OFFDATA.OFFthresh=str2num(minDur);
+        OFFDATA.OFFthresh=minDur;
         
         %Store ON duration threshold
-        OFFDATA.ONthresh=str2num(maxInt);
+        OFFDATA.ONthresh=maxInt;
         
         %Store START OFF-P data
         OFFDATA.StartOPadjusted(:,i)=sparse(adjOFFStarts,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFStarts));

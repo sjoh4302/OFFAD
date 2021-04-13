@@ -66,7 +66,7 @@ allCol(allEpoch=='W',3)=1;
 allCol(allEpoch=='R',2)=0.7;
 allCol(allEpoch=='N',3)=0;
 
-subplot('Position',[0.08 0.92 0.76 0.06]);
+subplot('Position',[0.08 0.94 0.76 0.06]);
 scatter(1:ceil(length(categorical(allEpoch))),categorical(allEpoch),10,allCol,'.')
 set(gca,'Tag','hypnogram')
 set(gca,'xtick',[])
@@ -80,13 +80,17 @@ uicontrol(g.Scroll,'Style', 'text','String',string(allEpoch(1)),...
     'ForegroundColor',allCol(1,:),... 
     'BackgroundColor',[1 1 1],...
     'Tag','VigState',...
-    'Position',[0.01 0.92 0.06 0.08]);  %Plot current state
+    'Position',[0.01 0.94 0.06 0.08]);  %Plot current state
 
 clear vigStateNames
 
 
 
 %%% GUI plotting
+
+%Background for optimization panel
+uipanel(g.Scroll,'Position',[0.1 0. 0.7 0.065])
+
 %Select PNE scale
 uicontrol(g.Scroll,'Style', 'text','String','PNE max',...
     'FontWeight','bold','FontSize',7,...
@@ -120,15 +124,15 @@ end
 
 %Create forward and backward scrolling arrows
 uicontrol(g.Scroll,'Style', 'pushbutton','String', '<',...
-    'FontWeight','bold','FontSize',20,...
+    'FontWeight','bold','FontSize',16,...
     'Units','normalized',...
-    'Position',[0.36 0.01 0.04 0.05],...
+    'Position',[0.30 0.89 0.04 0.03],...
     'Callback',@shiftScroll);
 
 uicontrol(g.Scroll,'Style', 'pushbutton','String', '>',...
-    'FontWeight','bold','FontSize',20,...
+    'FontWeight','bold','FontSize',16,...
     'Units','normalized',...
-    'Position',[0.52 0.01 0.04 0.05],...
+    'Position',[0.58 0.89 0.04 0.03],...
      'Callback',@shiftScroll);
 
 %Show X-scale
@@ -141,63 +145,68 @@ uicontrol(g.Scroll,'Style', 'text','String','0.5 sec',...
 
 %Create sliders for min duration and max interval
 try
-    startMinDur=OFFDATA.OFFthresh;
+    startMinDur=OFFDATA.OFFthresh(1);
+    startDurThresh=OFFDATA.OFFthresh;
+    
 catch
     startMinDur=0;
+    startDurThresh=repmat(0,1,length(OFFDATA.Channels));
 end
 uicontrol(g.Scroll,'Style', 'slider','Value',startMinDur,...
     'Min',0,'Max',250,'SliderStep',[1/250,5/250],...
     'Units','normalized',...
-    'Position',[0.08 0.01 0.23 0.03],...
+    'Position',[0.11 0.01 0.23 0.03],...
     'Tag','minDur',...
     'Callback',@shiftDur);
+
 uicontrol(g.Scroll,'Style', 'edit','String',startMinDur,...
     'FontSize',8,...
     'Units','normalized',...
-    'BackgroundColor',[1 1 1],...
-    'Position',[0.31 0.01 0.02 0.03],...
+    'Position',[0.34 0.01 0.03 0.03],...
     'Tag','minDurVal',...
+    'UserData',startDurThresh,...
     'Callback',@drawOFFP);
 uicontrol(g.Scroll,'Style', 'text','String','Minimum off-period duration (ms)',...
     'FontSize',8,...
     'Units','normalized',...
-    'BackgroundColor',[1 1 1],...
-    'Position',[0.08 0.04 0.26 0.03])
+    'Position',[0.11 0.04 0.26 0.02])
 
 try
-    startMaxInt=OFFDATA.ONthresh;
+    startMaxInt=OFFDATA.ONthresh(1);
+    startIntThresh=OFFDATA.ONthresh;
 catch
     startMaxInt=0;
+    startIntThresh=repmat(0,1,length(OFFDATA.Channels));
 end
 uicontrol(g.Scroll,'Style', 'slider','Value',startMaxInt,...
     'Min',0,'Max',250,'SliderStep',[1/250,5/250],...
     'Units','normalized',...
-    'Position',[0.58 0.01 0.21 0.03],...
+    'Position',[0.55 0.01 0.21 0.03],...
     'Tag','maxInter',...
     'Callback',@shiftInter);
+
 uicontrol(g.Scroll,'Style', 'edit','String',startMaxInt,...
     'FontSize',8,...
     'Units','normalized',...
-    'BackgroundColor',[1 1 1],...
-    'Position',[0.79 0.01 0.02 0.03],...
+    'Position',[0.76 0.01 0.03 0.03],...
     'Tag','maxInterVal',...
+    'UserData',startIntThresh,...
     'Callback',@drawOFFP);
 uicontrol(g.Scroll,'Style', 'text','String','Maximum off-period interuption (ms)',...
     'FontSize',8,...
     'Units','normalized',...
-    'BackgroundColor',[1 1 1],...
-    'Position',[0.58 0.04 0.21 0.03])
+    'Position',[0.55 0.04 0.21 0.02])
 
 
 % Create exit buttons
-uicontrol(g.Scroll,'Style','pushbutton','String','Save and Exit',...
+uicontrol(g.Scroll,'Style','pushbutton','String','Store and Exit',...
     'FontWeight','bold','FontSize',12,...
     'Units','normalized',...
     'BackgroundColor',[0.3 0.8 0.8],...
     'Position',[0.89 0.05 0.105 0.04],...
     'Callback',['[OFFDATA]=OFFAD_scrollSave(OFFDATA,'...
-    'get(findobj(''Tag'',''minDurVal''),''String''),'...
-    'get(findobj(''Tag'',''maxInterVal''),''String''));'...
+    'get(findobj(''Tag'',''minDurVal''),''UserData''),'...
+    'get(findobj(''Tag'',''maxInterVal''),''UserData''));'...
     'close(findobj(''Tag'',''OFFAD_SCROLL''))'])
 
 uicontrol(g.Scroll,'Style','pushbutton','String','Exit',...
@@ -217,13 +226,59 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName,...
     'Tag','histChan',...
     'Callback',@shiftChan);
 
+%Display channels being opitimzed
+uicontrol(g.Scroll,'Style', 'text','String','Optimize OFF periods:',...
+    'FontWeight','bold','FontSize',8,...
+    'Units','normalized',...
+    'Position',[0.37 0.04 0.18 0.02])
+uicontrol(g.Scroll,'Style', 'text','String','All channels',...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'Tag','optChan',...
+    'Position',[0.37 0.01 0.18 0.03])
 
 
+%Radiobuttons for channel specific optimizations
+try
+    if length(unique(OFFDATA.OFFthresh))+length(unique(OFFDATA.ONthresh))==2
+        masterVal=1;
+        rbVal=repmat(1,1,length(OFFDATA.ChannelsFullName));
+        rbEnable='Off';
+    else
+        masterVal=0;
+        rbVal=[1,repmat(0,1,length(OFFDATA.ChannelsFullName)-1)];
+        rbEnable='On';
+    end
+catch
+    masterVal=1;
+    rbVal=repmat(1,1,length(OFFDATA.ChannelsFullName));
+    rbEnable='Off';
+end
+uicontrol(g.Scroll,'Style','radiobutton','String','All',...
+    'Fontsize',10,...
+    'Units','normalized',...    
+    'BackgroundColor',[1 1 1],...
+    'Value',masterVal,...
+    'Tag','RBmaster',...
+    'UserData',length(OFFDATA.ChannelsFullName),...
+    'Callback',@specificOpt,...
+    'Position',[0.03 0.89 0.05 0.03]);  
 
-
-
-
-
+radioHeight1=linspace(0.09,0.89,length(OFFDATA.ChannelsFullName)+1);
+radioHeight2=(radioHeight1(2)-radioHeight1(1))-(radioHeight1(2)-radioHeight1(1))/1.5;
+radioHeight1=flip(radioHeight1(1:end-1));
+for m = 1:length(OFFDATA.ChannelsFullName)
+    rbName=['RB',char(string((m)))];
+    uicontrol(g.Scroll,'Style','radiobutton',...
+    'Units','normalized',...    
+    'BackgroundColor',[1 1 1],...
+    'Value',rbVal(m),...
+    'Enable',rbEnable,...
+    'UserData',OFFDATA.ChannelsFullName(m),...
+    'Tag',rbName,...
+    'Callback',@changeOpt,...
+    'Position',[0.03 radioHeight1(m)+radioHeight2*0.45 0.015 0.03])
+end
 
 
 
@@ -234,13 +289,14 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName,...
 uicontrol(g.Scroll,'Style', 'edit','String','0',...
     'FontWeight','bold','FontSize',10,...
     'Units','normalized',...
-    'Position',[0.42 0.01 0.08 0.03],'CreateFcn',@drawOFFP,...
+    'Position',[0.42 0.89 0.08 0.03],'CreateFcn',@drawOFFP,...
     'Tag','scrollTime',...
     'Callback',@drawOFFP);
 uicontrol(g.Scroll,'Style', 'text','String','Time(s)',...
-    'FontWeight','bold','FontSize',10,...
+    'FontSize',10,...
+    'BackgroundColor',[1 1 1],...
     'Units','normalized',...
-    'Position',[0.42 0.04 0.08 0.03]);
+    'Position',[0.375 0.89 0.045 0.03]);
 
 
 
@@ -289,7 +345,7 @@ end
 
 
 numChan=length(OFFDATA.ChannelsFullName);
-subplot2=linspace(0.1,0.90,numChan+1);
+subplot2=linspace(0.09,0.89,numChan+1);
 subplot4=(subplot2(2)-subplot2(1))-(subplot2(2)-subplot2(1))/10;
 subplot2=flip(subplot2(1:end-1));
 for i = 1:numChan
@@ -332,14 +388,16 @@ for i = 1:numChan
         end
         
         %Remove short gaps
-        chooseON=tmpOFFStarts(2:end)-tmpOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
+        allIntThresh=get(findobj('Tag','maxInterVal'),'UserData');
+        chooseON=tmpOFFStarts(2:end)-tmpOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*allIntThresh(i));
         chooseONstart=~[0;chooseON];
         chooseONend=~[chooseON;0];
         tmpOFFStarts=tmpOFFStarts(chooseONstart);
         tmpOFFEnds=tmpOFFEnds(chooseONend);
         
         %Remove short off-periods
-        chooseOFF=tmpOFFEnds-tmpOFFStarts+1>(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
+        allDurThresh=get(findobj('Tag','minDurVal'),'UserData');
+        chooseOFF=tmpOFFEnds-tmpOFFStarts+1>(OFFDATA.PNEfs/1000*allDurThresh(i));
         tmpOFFStarts=tmpOFFStarts(chooseOFF);
         tmpOFFEnds=tmpOFFEnds(chooseOFF);
         
@@ -470,8 +528,19 @@ drawOFFP
 
 end
 
-function shiftDur(source,~)
+function shiftDur(source,~) 
 set(findobj('Tag','minDurVal'),'String',num2str(source.Value))
+
+%Set channel tresholds
+if get(findobj('Tag','RBmaster'),'Value')==1
+    set(findobj('Tag','minDurVal'),'UserData',repmat(source.Value,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+else
+    chanDurThresh=get(findobj('Tag','minDurVal'),'UserData');
+    currChan=double(string(regexp(get(findobj('Tag','optChan'),'String'),'\d','match')));
+    chanDurThresh(currChan)=source.Value;
+    set(findobj('Tag','minDurVal'),'UserData',chanDurThresh);
+end
+
 %Set histograms to replot
 set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 
@@ -483,6 +552,16 @@ set(findobj('Tag','maxInterVal'),'String',num2str(source.Value))
 %Set histograms to replot
 set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 
+%Set channel tresholds
+if get(findobj('Tag','RBmaster'),'Value')==1
+    set(findobj('Tag','maxInterVal'),'UserData',repmat(source.Value,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+else
+    chanInterThresh=get(findobj('Tag','maxInterVal'),'UserData');
+    currChan=double(string(regexp(get(findobj('Tag','optChan'),'String'),'\d','match')));
+    chanInterThresh(currChan)=source.Value;
+    set(findobj('Tag','maxInterVal'),'UserData',chanInterThresh);
+end
+
 drawOFFP
 end
 
@@ -493,10 +572,91 @@ set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 drawOFFP
 end
 
+function specificOpt(source,~)
+if source.Value == 0
+    
+    %Disable radio buttons
+    for j = 1:source.UserData
+        rbName=['RB',char(string((j)))];
+        set(findobj('Tag',rbName),'Enable','on')
+        if j>1
+            set(findobj('Tag',rbName),'Value',0)
+        end
+    end
+    set(findobj('Tag','optChan'),'String',get(findobj('Tag','RB1'),'UserData'))
+     
+    %Display correct channel histograms
+    set(findobj('Tag','histChan'),'Value',1)
+    shiftChan
+    
+elseif source.Value == 1
 
-%profile off
-%profile viewer
+    %Warning
+    answer = questdlg('Optimization thresholds for all channels will be reset. Do you wish to continue?', ...
+	'Warning', ...
+	'Yes','No','No');
+    waitfor(answer)
+    % Handle response
+    switch answer
+        case 'Yes'
+            
+
+        %Disable radio button
+        for j = 1:source.UserData
+            rbName=['RB',char(string((j)))];
+            set(findobj('Tag',rbName),'Enable','off')
+            set(findobj('Tag',rbName),'Value',1)
+        end
+        set(findobj('Tag','optChan'),'String','All channels')
+
+        %Reset optimization thresholds
+        set(findobj('Tag','minDurVal'),'String',0)
+        set(findobj('Tag','maxInterVal'),'String',0)
+        set(findobj('Tag','minDurVal'),'UserData',repmat(0,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+        set(findobj('Tag','maxInterVal'),'UserData',repmat(0,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+
+        %Display correct channel histograms
+        set(findobj('Tag','histChan'),'Value',1)
+        shiftChan
+        
+    case 'No'
+        source.Value=0;  
+    end
+    
 end
+end
+
+function changeOpt(source,~)
+%Set all channels to 0
+chanNum=get(findobj('Tag','RBmaster'),'UserData');
+for j = 1:chanNum
+        rbName=['RB',char(string((j)))];
+        set(findobj('Tag',rbName),'Value',0)
+end
+%Set current channel to 1
+source.Value=1;
+
+%Display current channel being optimized
+set(findobj('Tag','optChan'),'String',source.UserData)
+
+%Display correct channel histograms
+set(findobj('Tag','histChan'),'Value',double(string(regexp(source.UserData,'\d','match'))))
+
+%Display correct optimization thresholds
+allIntThresh=get(findobj('Tag','maxInterVal'),'UserData');
+set(findobj('Tag','maxInterVal'),'String',num2str(allIntThresh(double(string(regexp(source.UserData,'\d','match'))))))
+allDurThresh=get(findobj('Tag','minDurVal'),'UserData');
+set(findobj('Tag','minDurVal'),'String',num2str(allDurThresh(double(string(regexp(source.UserData,'\d','match'))))))
+
+%Display new histograms
+shiftChan
+
+end
+
+
+
+end
+
 %clear PNEtmp
 %clear LFPtmp
 %%%% FAST LOADING EXAMPLE SCRIPT
