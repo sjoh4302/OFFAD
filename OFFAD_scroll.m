@@ -226,16 +226,6 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName,...
     'Tag','histChan',...
     'Callback',@shiftChan);
 
-%Display channels being opitimzed
-uicontrol(g.Scroll,'Style', 'text','String','Optimize OFF periods:',...
-    'FontWeight','bold','FontSize',8,...
-    'Units','normalized',...
-    'Position',[0.37 0.04 0.18 0.02])
-uicontrol(g.Scroll,'Style', 'text','String','All channels',...
-    'FontWeight','bold','FontSize',10,...
-    'Units','normalized',...
-    'Tag','optChan',...
-    'Position',[0.37 0.01 0.18 0.03])
 
 
 %Radiobuttons for channel specific optimizations
@@ -244,16 +234,21 @@ try
         masterVal=1;
         rbVal=repmat(1,1,length(OFFDATA.ChannelsFullName));
         rbEnable='Off';
+        chanString='All channels';
     else
         masterVal=0;
         rbVal=[1,repmat(0,1,length(OFFDATA.ChannelsFullName)-1)];
         rbEnable='On';
+        chanString='Ch1';
     end
 catch
     masterVal=1;
     rbVal=repmat(1,1,length(OFFDATA.ChannelsFullName));
     rbEnable='Off';
+    chanString='All channels';
 end
+
+%Create master button
 uicontrol(g.Scroll,'Style','radiobutton','String','All',...
     'Fontsize',10,...
     'Units','normalized',...    
@@ -264,8 +259,10 @@ uicontrol(g.Scroll,'Style','radiobutton','String','All',...
     'Callback',@specificOpt,...
     'Position',[0.03 0.89 0.05 0.03]);  
 
+%Create channel buttons
 radioHeight1=linspace(0.09,0.89,length(OFFDATA.ChannelsFullName)+1);
-radioHeight2=(radioHeight1(2)-radioHeight1(1))-(radioHeight1(2)-radioHeight1(1))/1.5;
+radioHeight2=(radioHeight1(2)-radioHeight1(1))-(radioHeight1(2)-radioHeight1(1))/10;
+radioHeight2=radioHeight2-0.027;
 radioHeight1=flip(radioHeight1(1:end-1));
 for m = 1:length(OFFDATA.ChannelsFullName)
     rbName=['RB',char(string((m)))];
@@ -277,9 +274,19 @@ for m = 1:length(OFFDATA.ChannelsFullName)
     'UserData',OFFDATA.ChannelsFullName(m),...
     'Tag',rbName,...
     'Callback',@changeOpt,...
-    'Position',[0.03 radioHeight1(m)+radioHeight2*0.45 0.015 0.03])
+    'Position',[0.04 radioHeight1(m)+radioHeight2*0.5-0.015 0.015 0.03])
 end
 
+%Display name of channels being opitimzed
+uicontrol(g.Scroll,'Style', 'text','String','Optimize OFF periods:',...
+    'FontWeight','bold','FontSize',8,...
+    'Units','normalized',...
+    'Position',[0.37 0.04 0.18 0.02])
+uicontrol(g.Scroll,'Style', 'text','String',chanString,...
+    'FontWeight','bold','FontSize',10,...
+    'Units','normalized',...
+    'Tag','optChan',...
+    'Position',[0.37 0.01 0.18 0.03])
 
 
 
@@ -345,7 +352,7 @@ end
 
 
 numChan=length(OFFDATA.ChannelsFullName);
-subplot2=linspace(0.09,0.89,numChan+1);
+subplot2=linspace(0.1,0.9,numChan+1);
 subplot4=(subplot2(2)-subplot2(1))-(subplot2(2)-subplot2(1))/10;
 subplot2=flip(subplot2(1:end-1));
 for i = 1:numChan
@@ -353,7 +360,7 @@ for i = 1:numChan
     'FontWeight','bold','FontSize',10,...
     'Units','normalized',...
     'BackgroundColor',[1 1 1],...
-    'Position',[0.02 subplot2(i)+subplot4*0.45 0.04 0.03]);  %Plot channel name
+    'Position',[0.02 subplot2(i)+subplot4*0.5-0.015 0.04 0.03]);  %Plot channel name
 
     subplot('Position',[0.08 subplot2(i) 0.76 subplot4]);
     yyaxis left
