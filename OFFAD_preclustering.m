@@ -225,6 +225,7 @@ end
             GMModels = fitgmdist(sampCluster,i,'Replicates',5,'Options',options);
             allIDX(:,i)=cluster(GMModels,sampCluster);
         catch
+            warning('Failed to cluster channel')
             return %If clustering fails, cancel
         end
     end

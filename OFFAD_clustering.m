@@ -223,6 +223,7 @@ end
 
 
 catch
+    warning('Failed to cluster channel')
     StartOFF=[];
     EndOFF=[];
     OFF_clust_points=[];
