@@ -15,20 +15,23 @@ g.Scroll = figure('Units','points', ...
 
 drawnow
 
-subplot('Position',[0.0 0 0.06 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
+subplot('Position',[0.0 0 0.04 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
 xlimPNE=get(gca,'XLim');
 ylimPNE=get(gca,'YLim');
 ht = text(0.2*xlimPNE(1)+0.2*xlimPNE(2),0.5*ylimPNE(1)+0.5*ylimPNE(2),['PNE (', char(OFFDATA.PNEunit),')']);
 set(ht,'Rotation',90)
-set(ht,'FontSize',12)
+set(ht,'FontSize',10)
+set(ht,'Color',[0, 0.4470, 0.7410])
+set(ht,'FontWeight','bold')
 
-subplot('Position',[0.865 0 0.01 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
+subplot('Position',[0.86 0 0.01 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
 xlimLFP=get(gca,'XLim');
 ylimLFP=get(gca,'YLim');
 ht = text(0.8*xlimLFP(1)+0.8*xlimLFP(2),0.5*ylimLFP(1)+0.5*ylimLFP(2),['LFP (', char(OFFDATA.LFPunit),')']);
 set(ht,'Rotation',90)
-set(ht,'FontSize',12)
-
+set(ht,'FontSize',10)
+set(ht,'Color',[0.8500, 0.3250, 0.0980])
+set(ht,'FontWeight','bold')
 
 PNEtmp=load(OFFDATA.PNEpathin,OFFDATA.ChannelsFullName{:});
 PNEexampleObject = matfile(OFFDATA.PNEpathin);
@@ -62,7 +65,7 @@ allEpoch(vigInf.(vigStateNames{4}))='R'; allEpoch(vigInf.(vigStateNames{5}))='R'
 allEpoch(vigInf.(vigStateNames{1}))='W'; allEpoch(vigInf.(vigStateNames{2}))='W'; allEpoch(vigInf.(vigStateNames{3}))='W'; %Wake
 
 %Give each state a color
-allCol(allEpoch=='W',3)=1;
+allCol(allEpoch=='W',1)=0; allCol(allEpoch=='W',2)=0.447; allCol(allEpoch=='W',3)=0.7410;
 allCol(allEpoch=='R',2)=0.7;
 allCol(allEpoch=='N',3)=0;
 
@@ -126,13 +129,13 @@ end
 uicontrol(g.Scroll,'Style', 'pushbutton','String', '<',...
     'FontWeight','bold','FontSize',16,...
     'Units','normalized',...
-    'Position',[0.30 0.89 0.04 0.03],...
+    'Position',[0.30 0.9 0.04 0.03],...
     'Callback',@shiftScroll);
 
 uicontrol(g.Scroll,'Style', 'pushbutton','String', '>',...
     'FontWeight','bold','FontSize',16,...
     'Units','normalized',...
-    'Position',[0.58 0.89 0.04 0.03],...
+    'Position',[0.58 0.9 0.04 0.03],...
      'Callback',@shiftScroll);
 
 %Show X-scale
@@ -165,7 +168,8 @@ uicontrol(g.Scroll,'Style', 'edit','String',startMinDur,...
     'Position',[0.34 0.01 0.03 0.03],...
     'Tag','minDurVal',...
     'UserData',startDurThresh,...
-    'Callback',@drawOFFP);
+    'Callback',@shiftDurEdit);
+
 uicontrol(g.Scroll,'Style', 'text','String','Minimum off-period duration (ms)',...
     'FontSize',8,...
     'Units','normalized',...
@@ -191,7 +195,8 @@ uicontrol(g.Scroll,'Style', 'edit','String',startMaxInt,...
     'Position',[0.76 0.01 0.03 0.03],...
     'Tag','maxInterVal',...
     'UserData',startIntThresh,...
-    'Callback',@drawOFFP);
+    'Callback',@shiftInterEdit);
+
 uicontrol(g.Scroll,'Style', 'text','String','Maximum off-period interuption (ms)',...
     'FontSize',8,...
     'Units','normalized',...
@@ -274,7 +279,7 @@ for m = 1:length(OFFDATA.ChannelsFullName)
     'UserData',OFFDATA.ChannelsFullName(m),...
     'Tag',rbName,...
     'Callback',@changeOpt,...
-    'Position',[0.04 radioHeight1(m)+radioHeight2*0.5-0.015 0.015 0.03])
+    'Position',[0.045 radioHeight1(m)+radioHeight2*0.5+0.007 0.015 0.03])
 end
 
 %Display name of channels being opitimzed
@@ -296,14 +301,14 @@ uicontrol(g.Scroll,'Style', 'text','String',chanString,...
 uicontrol(g.Scroll,'Style', 'edit','String','0',...
     'FontWeight','bold','FontSize',10,...
     'Units','normalized',...
-    'Position',[0.42 0.89 0.08 0.03],'CreateFcn',@drawOFFP,...
+    'Position',[0.42 0.9 0.08 0.03],'CreateFcn',@drawOFFP,...
     'Tag','scrollTime',...
     'Callback',@drawOFFP);
 uicontrol(g.Scroll,'Style', 'text','String','Time(s)',...
     'FontSize',10,...
     'BackgroundColor',[1 1 1],...
     'Units','normalized',...
-    'Position',[0.375 0.89 0.045 0.03]);
+    'Position',[0.375 0.9 0.045 0.03]);
 
 
 
@@ -357,10 +362,10 @@ subplot4=(subplot2(2)-subplot2(1))-(subplot2(2)-subplot2(1))/10;
 subplot2=flip(subplot2(1:end-1));
 for i = 1:numChan
     uicontrol(g.Scroll,'Style', 'text','String',OFFDATA.ChannelsFullName(i),...
-    'FontWeight','bold','FontSize',10,...
+    'FontWeight','bold','FontSize',8,...
     'Units','normalized',...
     'BackgroundColor',[1 1 1],...
-    'Position',[0.02 subplot2(i)+subplot4*0.5-0.015 0.04 0.03]);  %Plot channel name
+    'Position',[0.0135 subplot2(i)+subplot4*0.5-0.02 0.03 0.03]);  %Plot channel name
 
     subplot('Position',[0.08 subplot2(i) 0.76 subplot4]);
     yyaxis left
@@ -536,15 +541,16 @@ drawOFFP
 end
 
 function shiftDur(source,~) 
-set(findobj('Tag','minDurVal'),'String',num2str(source.Value))
+newVal=get(findobj('Tag','minDur'),'Value');
+set(findobj('Tag','minDurVal'),'String',num2str(newVal))
 
 %Set channel tresholds
 if get(findobj('Tag','RBmaster'),'Value')==1
-    set(findobj('Tag','minDurVal'),'UserData',repmat(source.Value,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+    set(findobj('Tag','minDurVal'),'UserData',repmat(newVal,1,get(findobj('Tag','RBmaster'),'UserData'))); 
 else
     chanDurThresh=get(findobj('Tag','minDurVal'),'UserData');
     currChan=double(string(regexp(get(findobj('Tag','optChan'),'String'),'\d','match')));
-    chanDurThresh(currChan)=source.Value;
+    chanDurThresh(currChan)=newVal;
     set(findobj('Tag','minDurVal'),'UserData',chanDurThresh);
 end
 
@@ -554,23 +560,41 @@ set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 drawOFFP
 end
 
-function shiftInter(source,~)
-set(findobj('Tag','maxInterVal'),'String',num2str(source.Value))
+function shiftDurEdit(~,~)
+set(findobj('Tag','minDur'),'Value',str2num(get(findobj('Tag','minDurVal'),'String')));
+shiftDur
+end
+
+
+
+
+function shiftInter(~,~)
+newVal=get(findobj('Tag','maxInter'),'Value');
+set(findobj('Tag','maxInterVal'),'String',num2str(newVal))
 %Set histograms to replot
 set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 
 %Set channel tresholds
 if get(findobj('Tag','RBmaster'),'Value')==1
-    set(findobj('Tag','maxInterVal'),'UserData',repmat(source.Value,1,get(findobj('Tag','RBmaster'),'UserData'))); 
+    set(findobj('Tag','maxInterVal'),'UserData',repmat(newVal,1,get(findobj('Tag','RBmaster'),'UserData'))); 
 else
     chanInterThresh=get(findobj('Tag','maxInterVal'),'UserData');
     currChan=double(string(regexp(get(findobj('Tag','optChan'),'String'),'\d','match')));
-    chanInterThresh(currChan)=source.Value;
+    chanInterThresh(currChan)=newVal;
     set(findobj('Tag','maxInterVal'),'UserData',chanInterThresh);
 end
 
 drawOFFP
 end
+
+function shiftInterEdit(~,~)
+set(findobj('Tag','maxInter'),'Value',str2num(get(findobj('Tag','maxInterVal'),'String')));
+shiftInter
+end
+
+
+
+
 
 function shiftChan(source,~)
 %Set histograms to replot
@@ -578,6 +602,12 @@ set(findobj('Tag','OFFAD_SCROLL'),'UserData',1)
 
 drawOFFP
 end
+
+
+
+
+
+
 
 function specificOpt(source,~)
 if source.Value == 0
@@ -632,6 +662,8 @@ elseif source.Value == 1
     
 end
 end
+
+
 
 function changeOpt(source,~)
 %Set all channels to 0
