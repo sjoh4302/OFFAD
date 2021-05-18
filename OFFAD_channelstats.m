@@ -80,10 +80,14 @@ for i = 1:length(OFFDATA.Channels)
 end
 
 %%%%%%% Channel coherence plot 
+%Coherence between two channels is the average proportion of time both are
+%in same state.
 for i = 1:length(OFFDATA.Channels)
     for j = 1:length(OFFDATA.Channels)
-       coherenceMat(i,j)=length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,j))))...
-           /sum(OFFDATA.(['All',selectData])(:,i));
+       coherenceMat(i,j)=(length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,j))))...
+           /sum(OFFDATA.(['All',selectData])(:,i))...
+           +length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,j)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))))...
+           /sum(OFFDATA.(['All',selectData])(:,j)))/2;
     
     end
 end
