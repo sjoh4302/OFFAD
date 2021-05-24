@@ -48,7 +48,7 @@ if isempty(OFFDATA.LFPpathin)==0
         for j = 1:length(OFFDATA.ChannelsFullName)
             LFPtmp.(OFFDATA.ChannelsFullName(j))=filtfilt(bb1,aa1,double(LFPtmp.(OFFDATA.ChannelsFullName(j))));
             %DC offset
-            LFPtmp.(OFFDATA.ChannelsFullName(j))= LFPtmp.(OFFDATA.ChannelsFullName(j))-mean( LFPtmp.(OFFDATA.ChannelsFullName(j)));
+            %LFPtmp.(OFFDATA.ChannelsFullName(j))= LFPtmp.(OFFDATA.ChannelsFullName(j))-mean( LFPtmp.(OFFDATA.ChannelsFullName(j)));
         end
     end
     LFPexampleObject = matfile(OFFDATA.LFPpathin);
