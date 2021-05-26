@@ -70,13 +70,13 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',{'Hypnogram','Average LFP'},...
 
 
 %%% Generate hypnogram
-allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/4),1));
+allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen),1));
 allCol=repmat([0,0,0],length(allEpoch),1);
-vigStateNames={'w','w1','mt','r','r3','nr','nr2'};
+vigStateNames={'w','w1','mt','r','r3','nr','nr2','ma'};
 vigInf=load(OFFDATA.VSpathin,vigStateNames{:});
 allEpoch(vigInf.(vigStateNames{6}))='N'; allEpoch(vigInf.(vigStateNames{7}))='N'; %NREM
 allEpoch(vigInf.(vigStateNames{4}))='R'; allEpoch(vigInf.(vigStateNames{5}))='R'; %REM
-allEpoch(vigInf.(vigStateNames{1}))='W'; allEpoch(vigInf.(vigStateNames{2}))='W'; allEpoch(vigInf.(vigStateNames{3}))='W'; %Wake
+allEpoch(vigInf.(vigStateNames{1}))='W'; allEpoch(vigInf.(vigStateNames{2}))='W'; allEpoch(vigInf.(vigStateNames{3}))='W'; allEpoch(vigInf.(vigStateNames{8}))='W';%Wake
 
 %Give each state a color
 allCol(allEpoch=='W',1)=0; allCol(allEpoch=='W',2)=0.447; allCol(allEpoch=='W',3)=0.7410;
@@ -410,7 +410,9 @@ for i = 1:numChan
             if tmpOFFStarts(2)<=tmpOFFEnds(1) 
                  tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
                         find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
-            end       
+            end 
+        end
+        try
         %Add next OFF period after window
         tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
                      sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
