@@ -23,9 +23,13 @@ OFFDATA.AllOPadjusted=sparse(repmat(logical(0),length(OFFDATA.StartOP),length(OF
 
 numChan=length(OFFDATA.ChannelsFullName);
 for i = 1:numChan
-    
+        
         adjOFFStarts=find(OFFDATA.StartOP(:,i));
         adjOFFEnds=find(OFFDATA.EndOP(:,i));
+        
+        %%%If OFF periods detected in channel, apply thresholds
+        if ~isempty(adjOFFStarts)
+        
         %Remove short gaps
         chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*maxInt(i));
         chooseONstart=~[0;chooseON];
@@ -37,7 +41,7 @@ for i = 1:numChan
         chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*minDur(i));
         adjOFFStarts=adjOFFStarts(chooseOFF);
         adjOFFEnds=adjOFFEnds(chooseOFF);
-       
+        end
         
         adjOFFall=[];
         for k = 1:length(adjOFFStarts)
@@ -59,6 +63,7 @@ for i = 1:numChan
         %Store ALL OFF-P data
         OFFDATA.AllOPadjusted(:,i)=sparse(adjOFFall,1,logical(1),length(OFFDATA.StartOPadjusted),1,length(adjOFFall));
 
+        clear adjOFFStarts adjOFFEnds chooseON chooseONstart chooseONend chooseOFF 
 end        
         
 close(findobj('Tag','OFFAD_SCROLLSAVE'))
