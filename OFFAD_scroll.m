@@ -353,8 +353,8 @@ newTime=floor(oldTime/OFFDATA.epochLen)*4; %Round to nearest epoch start time
 if newTime<0
     newTime=num2str(0);  
 end
-if newTime>round(length(OFFDATA.AllOP)/OFFDATA.PNEfs)-5
-    newTime=num2str(((floor(((length(OFFDATA.AllOP)/OFFDATA.PNEfs)/OFFDATA.epochLen))-1)*4));
+if newTime>round(length(OFFDATA.StartOP)/OFFDATA.PNEfs)-5
+    newTime=num2str(((floor(((length(OFFDATA.StartOP)/OFFDATA.PNEfs)/OFFDATA.epochLen))-1)*4));
 end
 set(findobj('Tag','scrollTime'),'String',newTime); %set new time
 

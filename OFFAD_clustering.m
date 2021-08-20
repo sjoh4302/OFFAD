@@ -170,7 +170,8 @@ clear vsPNE
 %% Gaussian clustering
 %%%Create try/catch loop in case of ill-conditioning errors
 try
-    
+
+   
 if OFFDATA.OptimalK(chanNum)==0
     randPoints=randi(length(clusterVar1),10000,1);
     sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
@@ -188,6 +189,7 @@ if OFFDATA.OptimalK(chanNum)==0
     clear allIDX sampCluster randPoints
 end
 
+
 allData=[clusterVar1_full',clusterVar2_full'];
 randPoints=randi(length(clusterVar1),round(length(clusterVar1)*(OFFDATA.percSamp/100)),1);
 sampData=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
@@ -202,31 +204,140 @@ allPoints=[1:1:PNElength];
 [~,offCluster]=min(GMModel.mu(:,1));
 OFF_clust_points=allPoints(IDX==offCluster);
 
-%%%%% Find all OFF periods
-OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
-numOFF=length(OFFgaps); %number of OFF periods
-%loop going through all OFF periods
-for ep = 1:numOFF+1
-    if ep==1
-        StartOFF(ep)=OFF_clust_points(1); %find start point of this OFF period
-        EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
-    elseif ep==numOFF+1
-        StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
-        EndOFF(ep)=OFF_clust_points(end); %find last point of this OFF period
-    else
-        StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
-        EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
-    end
-    
-   
+%%%%% Identify PNE negative half waves with OFF period points detected
+clustOP=sparse(OFF_clust_points,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
+
+% Find all negative half waves
+ %%% load pNe signal
+PNE = load(OFFDATA.PNEpathin,'-mat',chan);
+PNE = PNE.(chan);
+
+if OFFDATA.PNEunit=="uV*1000000" %Convert to uV
+    PNE=PNE/1000000;
 end
+
+
+if length(unique(PNE))<4
+    warning('Wrong amplitude units specified')
+end
+
+PNE = abs(PNE); %take absolute values 
+
+%%% Subtract mean in wake periods
+%load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
+wakeState = load(OFFDATA.VSpathin,'-mat','w');
+wakeState = wakeState.('w');
+
+% find NREM episodes
+endEpi=find(diff(wakeState)>1); %find last epoch of each episode
+endEpi=[endEpi;length(wakeState)]; %add final episode end
+startEpi=find(diff(wakeState)>1)+1; %find first epoch of each episode
+startEpi=[1;startEpi]; %add first episode start
+numepi=length(startEpi); %number of NREM episodes
+wakeEpochs=[];
+
+%loop going through all NREM episodes 
+for ep = 1:numepi
+    
+    Startepoch=wakeState(startEpi(ep)); %find start epoch of this NREM episode
+    Endepoch=wakeState(endEpi(ep)); %find second last epoch of this NREM episode
+    
+    if Endepoch-Startepoch<2 %if NREM episode 2 epochs or shorter, there'll be no signal because we're cutting the first and last epoch (i.e. state transitions)
+        continue
+    else %if NREM episode at least 3 epochs, find bins corresponding to the start of the second epoch and end of the second last epoch
+        wakeEpochs=[wakeEpochs; Startepoch Endepoch];
+    end
+end
+
+wakePNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
+
+%loop going through all NREM epochs (except for first and last)
+for ep = 1:length(wakeEpochs)
+
+    Startepoch=wakeEpochs(ep,1); %start of respective epoch
+    Endepoch=wakeEpochs(ep,2); %end of respective epoch
+
+    %fill NaN vectors with pNe signal for this NREM episode
+    StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
+    EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
+    try
+        wakePNE(StartBin:EndBin)=PNE(StartBin:EndBin);
+    end
+end
+%concatenate the signal from all selected NREM episodes to get rid of gaps
+wakePNE=wakePNE(~isnan(wakePNE));
+wakePNEmean=mean(wakePNE);
+clear wakePNE wakeEpochs
+
+relativePNE=PNE-wakePNEmean;
+polarityPNE=ones(length(relativePNE),1);
+polarityPNE(relativePNE<0)=-1;
+nhwStarts=find(diff(polarityPNE)<0)+1;
+nhwEnds=find(diff(polarityPNE)>0);
+if nhwEnds(1)<nhwStarts(1)
+    nhwEnds=nhwEnds(2:end);
+end
+if nhwStarts(end)>nhwEnds(end)
+    nhwStarts=nhwStarts(1:end-1);
+end
+OFFperiodIndex=logical([]);
+for i = 1:length(nhwStarts)
+    if sum(clustOP(nhwStarts(i):nhwEnds(i)))>0
+        OFFperiodIndex(i)=logical(1);
+    else
+        OFFperiodIndex(i)=logical(0);
+    end
+end
+clear PNE
+
+%Start times
+StartOFF=[];nhwStarts(OFFperiodIndex)
+%End time
+EndOFF=[];nhwEnds(OFFperiodIndex)
+%All times
+tempBorders=zeros(length(OFFDATA.StartOP),1);
+tempBorders(nhwStarts(OFFperiodIndex))=1;
+tempBorders(nhwEnds(OFFperiodIndex))=1;
+newCounter=1;
+if tempBorders(i)==1
+    if tempBorders(i-1)==1
+        newCounter=0;
+    end
+elseif tempBorders(i)==0
+    if tempBorders(i-1)==1 & newCounter==1
+        tempBorders(i)=1;
+    end
+    newCounter=1;
+end
+AllOFF=find(tempBorders==1);
+clear tempBorders newCounter
+
+% %%
+% %%%%% Find all OFF periods
+% OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
+% numOFF=length(OFFgaps); %number of OFF periods
+% %loop going through all OFF periods
+% for ep = 1:numOFF+1
+%     if ep==1
+%         StartOFF(ep)=OFF_clust_points(1); %find start point of this OFF period
+%         EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
+%     elseif ep==numOFF+1
+%         StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
+%         EndOFF(ep)=OFF_clust_points(end); %find last point of this OFF period
+%     else
+%         StartOFF(ep)=OFF_clust_points(OFFgaps(ep-1)+1); %find start point of this OFF period
+%         EndOFF(ep)=OFF_clust_points(OFFgaps(ep)); %find last point of this OFF period
+%     end
+%     
+%    
+% end
 
 
 catch
     warning('Failed to cluster channel')
     StartOFF=[];
     EndOFF=[];
-    OFF_clust_points=[];
+    AllOFF=[];
     
 end
 
@@ -237,12 +348,13 @@ OFFDATA.StartOP(:,chanNum)=sparse(StartOFF,1,logical(1),length(OFFDATA.StartOP),
 OFFDATA.EndOP(:,chanNum)=sparse(EndOFF,1,logical(1),length(OFFDATA.StartOP),1,length(EndOFF));
 
 %Store ALL OFF-P data
-OFFDATA.AllOP(:,chanNum)=sparse(OFF_clust_points,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
+OFFDATA.AllOP(:,chanNum)=sparse(AllOFF,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
 
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
-      clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled StartOFF EndOFF
-
+      clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled StartOFF EndOFF ...
+      nhwStarts nhwEnds OFFperiodIndex
+       
 %Display total channel clustering time
 channelTime=toc(channelTimer);
 display(['Channel clustering time = ',char(string(channelTime)),' sec'])
