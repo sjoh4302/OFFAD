@@ -291,9 +291,9 @@ end
 clear PNE
 
 %Start times
-StartOFF=[];nhwStarts(OFFperiodIndex)
+StartOFF=nhwStarts(OFFperiodIndex);
 %End time
-EndOFF=[];nhwEnds(OFFperiodIndex)
+EndOFF=nhwEnds(OFFperiodIndex);
 %All times
 tempBorders=zeros(length(OFFDATA.StartOP),1);
 tempBorders(nhwStarts(OFFperiodIndex))=1;
