@@ -50,6 +50,9 @@ end
 OFFDATA.ChannelsFullName=string(channelNums(chanOrder));
 OFFDATA.Channels=double(string(cellfun(@(X) regexp(X,'\d*','match'),channelNums(chanOrder),'UniformOutput',false)));
 OFFDATA.OptimalK=zeros(length(OFFDATA.Channels),1);
+for nameChan=1:length(OFFDATA.ChannelsFullName)
+    OFFDATA.GMModels.(OFFDATA.ChannelsFullName(nameChan))=[];
+end
 %% Initialise vigilance state data
 % cutting off one 4 second epoch at the beginning and end of each episode to exclude transitional states
 stage='nr';

@@ -194,15 +194,22 @@ allData=[clusterVar1_full',clusterVar2_full'];
 randPoints=randi(length(clusterVar1),round(length(clusterVar1)*(OFFDATA.percSamp/100)),1);
 sampData=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
 options = statset('MaxIter',1000,'TolFun',1e-5);
-GMModel = fitgmdist(sampData,OFFDATA.OptimalK(chanNum),'Replicates',20,'Options',options);
+
+if isempty(OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum)))
+    GMModel = fitgmdist(sampData,OFFDATA.OptimalK(chanNum),'Replicates',20,'Options',options);
+    OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum)) = GMModel; 
+else
+    GMModel = OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum));
+end
 IDX = cluster(GMModel,allData);
+
+
+allPoints=[1:1:PNElength];
+[~,offCluster]=min(GMModel.mu(:,1));
+OFF_clust_points=allPoints(IDX==offCluster);
 
 %% Find off periods 
 %profile on
-allPoints=[1:1:PNElength];
-
-[~,offCluster]=min(GMModel.mu(:,1));
-OFF_clust_points=allPoints(IDX==offCluster);
 
 %%%%% Identify PNE negative half waves with OFF period points detected
 clustOP=sparse(OFF_clust_points,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
@@ -312,7 +319,7 @@ end
 AllOFF=find(tempBorders==1);
 clear tempBorders newCounter
 
-% %%
+%%
 % %%%%% Find all OFF periods
 % OFFgaps=find(diff(OFF_clust_points)>1); %find last epoch of each episode
 % numOFF=length(OFFgaps); %number of OFF periods
@@ -331,7 +338,7 @@ clear tempBorders newCounter
 %     
 %    
 % end
-
+% AllOFF=OFF_clust_points;
 
 catch
     warning('Failed to cluster channel')
@@ -348,12 +355,12 @@ OFFDATA.StartOP(:,chanNum)=sparse(StartOFF,1,logical(1),length(OFFDATA.StartOP),
 OFFDATA.EndOP(:,chanNum)=sparse(EndOFF,1,logical(1),length(OFFDATA.StartOP),1,length(EndOFF));
 
 %Store ALL OFF-P data
-OFFDATA.AllOP(:,chanNum)=sparse(AllOFF,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
+OFFDATA.AllOP(:,chanNum)=sparse(AllOFF,1,logical(1),length(OFFDATA.StartOP),1,length(AllOFF));
 
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
       clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled StartOFF EndOFF ...
-      nhwStarts nhwEnds OFFperiodIndex
+      nhwStarts nhwEnds OFFperiodIndex AllOFF
        
 %Display total channel clustering time
 channelTime=toc(channelTimer);
