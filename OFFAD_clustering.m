@@ -19,7 +19,6 @@ uicontrol(g.Clustering,'Style', 'text','String','Warning: Clustering in progress
 
 drawnow 
 
-
 %%%%% Perform clustering
 %% collect bin number for start and end of each NREM epoch
 % cutting off one 4 second epoch at the beginning and end of each episode to exclude transitional states
@@ -68,56 +67,80 @@ OFFDATA.AllOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName
 clear exampleObject 
 
 for chanNum = 1:length(OFFDATA.ChannelsFullName)
-    %Start channel timer
-    channelTimer=tic;
-    
-    chan=OFFDATA.ChannelsFullName(chanNum);    
-    display(['Clustering ',char(chan)])
+%Start channel timer
+channelTimer=tic;
 
-    %skip channel if it's not a good channel (was excluded on visual inspection due to bad signals)
-            
-        %%% load pNe signal
-        PNE = load(OFFDATA.PNEpathin,'-mat',chan);
-        PNE = PNE.(chan);
-        
-        if OFFDATA.PNEunit=="uV*1000000" %Convert to uV
-            PNE=PNE/1000000;
-        end
-        
-        PNE = int16(PNE);
-        
-        if length(unique(PNE))<4
-            warning('Wrong amplitude units specified')
-        end
-        
-        PNE = abs(PNE); %take absolute values 
-        
-        %%% collect pNe signal for all episodes of chosen vigilance state
-        vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
-        vsPNEtime=NaN(1,length(PNE)); %NaN vectors to be filled with recording time values
-         
-        %loop going through all NREM epochs (except for first and last)
-        for ep = 1:numepochs
-            
-            Startepoch=cleanepochs(ep,1); %start of respective epoch
-            Endepoch=cleanepochs(ep,2); %end of respective epoch
-            
-            %fill NaN vectors with pNe signal for this NREM episode
-            StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
-            EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
-            try
-                vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
-                vsPNEtime(StartBin:EndBin)=StartBin:EndBin;
-            end
-            
-        end
-        %concatenate the signal from all selected NREM episodes to get rid of gaps
-        vsPNE=vsPNE(~isnan(vsPNE));
-        vsPNEtime=vsPNEtime(~isnan(vsPNEtime));
-        
-        
+chan=OFFDATA.ChannelsFullName(chanNum);    
+display(['Clustering ',char(chan)])
+
+%skip channel if it's not a good channel (was excluded on visual inspection due to bad signals)
+
+
+%%% load pNe signal
+PNE = load(OFFDATA.PNEpathin,'-mat',chan);
+PNE = PNE.(chan);
+
+if OFFDATA.PNEunit=="uV*1000000" %Convert to uV
+    PNE=PNE/1000000;
+end
+
+PNE = int16(PNE);
+
+if length(unique(PNE))<4
+    warning('Wrong amplitude units specified')
+end
+
+PNE = abs(PNE); %take absolute values 
+
+
+
+
+%%% collect pNe signal for all episodes of chosen vigilance state
+vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
+vsPNEtime=NaN(1,length(PNE)); %NaN vectors to be filled with recording time values
+
+%loop going through all NREM epochs (except for first and last)
+for ep = 1:numepochs
+
+    Startepoch=cleanepochs(ep,1); %start of respective epoch
+    Endepoch=cleanepochs(ep,2); %end of respective epoch
+
+    %fill NaN vectors with pNe signal for this NREM episode
+    StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
+    EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
+    try
+        vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
+        vsPNEtime(StartBin:EndBin)=StartBin:EndBin;
+    end
+
+end
+%concatenate the signal from all selected NREM episodes to get rid of gaps
+vsPNE=vsPNE(~isnan(vsPNE));
+vsPNEtime=vsPNEtime(~isnan(vsPNEtime));
+
+
+%%%%%% Find ALL clean pNe points (artifact free) 
+
+cleanPNE=NaN(1,PNElength); %NaN vectors to be filled with pNe signal
+cleanPNEtime=NaN(1,PNElength); %NaN vectors to be filled with recording time values
+
+%load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
+states=["nr","w","r","mt"];
+for st=1:length(states)
+    vigState = load(OFFDATA.VSpathin,'-mat',states(st));
+    vigState = vigState.(states(st));
     
-%end
+    for k=1:length(vigState)
+        startVigEpoch=floor((vigState(k)-1)*4*OFFDATA.PNEfs)+1;
+        endVigEpoch=floor((vigState(k))*4*OFFDATA.PNEfs);
+        
+        cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
+        cleanPNEtime(startVigEpoch:endVigEpoch)=1;
+    end
+end
+%concatenate the signal from all selected episodes to get rid of gaps
+cleanPNE=cleanPNE(~isnan(cleanPNE));
+cleanPNEtime=find(cleanPNEtime==1);
 
 
 
@@ -126,7 +149,7 @@ for chanNum = 1:length(OFFDATA.ChannelsFullName)
 if OFFDATA.clustVar1Select==1
     winSize=(OFFDATA.clustVar1Smooth*2)+1;
     clusterVar1=conv(vsPNE,gausswin(winSize));
-    clusterVar1_full=conv(PNE,gausswin(winSize));
+    clusterVar1_full=conv(cleanPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar1=clusterVar1(winSize/2:end-winSize/2);
         clusterVar1_full=clusterVar1_full(winSize/2:end-winSize/2);
@@ -139,7 +162,7 @@ elseif OFFDATA.clustVar1Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
     [clusterVar1,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
-    [clusterVar1_full,F] = offPeriodScalogram(PNE,OFFDATA.PNEfs,percOverlap,LB_freq);
+    [clusterVar1_full,F] = offPeriodScalogram(cleanPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
@@ -147,7 +170,7 @@ end
 if OFFDATA.clustVar2Select==1
     winSize=(OFFDATA.clustVar2Smooth*2)+1;
     clusterVar2=conv(vsPNE,gausswin(winSize));
-     clusterVar2_full=conv(PNE,gausswin(winSize));
+     clusterVar2_full=conv(cleanPNE,gausswin(winSize));
     if mod(winSize,2)==0
         clusterVar2=clusterVar2(winSize/2:end-winSize/2);
         clusterVar2_full=clusterVar2_full(winSize/2:end-winSize/2);
@@ -160,7 +183,7 @@ elseif OFFDATA.clustVar2Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
     [clusterVar2,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
-    [clusterVar2_full,F] = offPeriodScalogram(PNE,OFFDATA.PNEfs,percOverlap,LB_freq);
+    [clusterVar2_full,F] = offPeriodScalogram(cleanPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
@@ -170,6 +193,7 @@ clear vsPNE
 %% Gaussian clustering
 %%%Create try/catch loop in case of ill-conditioning errors
 try
+
 
    
 if OFFDATA.OptimalK(chanNum)==0
@@ -189,11 +213,11 @@ if OFFDATA.OptimalK(chanNum)==0
     clear allIDX sampCluster randPoints
 end
 
-
 allData=[clusterVar1_full',clusterVar2_full'];
 randPoints=randi(length(clusterVar1),round(length(clusterVar1)*(OFFDATA.percSamp/100)),1);
 sampData=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
 options = statset('MaxIter',1000,'TolFun',1e-5);
+
 
 if isempty(OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum)))
     GMModel = fitgmdist(sampData,OFFDATA.OptimalK(chanNum),'Replicates',20,'Options',options);
@@ -201,12 +225,13 @@ if isempty(OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum)))
 else
     GMModel = OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum));
 end
+
 IDX = cluster(GMModel,allData);
 
 
-allPoints=[1:1:PNElength];
+
 [~,offCluster]=min(GMModel.mu(:,1));
-OFF_clust_points=allPoints(IDX==offCluster);
+OFF_clust_points=cleanPNEtime(IDX==offCluster);
 
 %% Find off periods 
 %profile on
@@ -243,7 +268,7 @@ startEpi=[1;startEpi]; %add first episode start
 numepi=length(startEpi); %number of NREM episodes
 wakeEpochs=[];
 
-%loop going through all NREM episodes 
+%Find all WAKE epochs 
 for ep = 1:numepi
     
     Startepoch=wakeState(startEpi(ep)); %find start epoch of this NREM episode
@@ -279,7 +304,7 @@ clear wakePNE wakeEpochs
 relativePNE=PNE-wakePNEmean;
 polarityPNE=ones(length(relativePNE),1);
 polarityPNE(relativePNE<0)=-1;
-nhwStarts=find(diff(polarityPNE)<0)+1;
+nhwStarts=find(diff(polarityPNE)<0)+1; %NHW=negative half waves
 nhwEnds=find(diff(polarityPNE)>0);
 if nhwEnds(1)<nhwStarts(1)
     nhwEnds=nhwEnds(2:end);
@@ -296,6 +321,7 @@ for i = 1:length(nhwStarts)
     end
 end
 clear PNE
+
 
 %Start times
 StartOFF=nhwStarts(OFFperiodIndex);
