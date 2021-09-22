@@ -50,6 +50,7 @@ end
 OFFDATA.ChannelsFullName=string(channelNums(chanOrder));
 OFFDATA.Channels=double(string(cellfun(@(X) regexp(X,'\d*','match'),channelNums(chanOrder),'UniformOutput',false)));
 OFFDATA.OptimalK=zeros(length(OFFDATA.Channels),1);
+OFFDATA.BaselineAmp=nan(length(OFFDATA.Channels),1);
 for nameChan=1:length(OFFDATA.ChannelsFullName)
     OFFDATA.GMModels.(OFFDATA.ChannelsFullName(nameChan))=[];
 end

@@ -131,8 +131,8 @@ for st=1:length(states)
     vigState = vigState.(states(st));
     
     for k=1:length(vigState)
-        startVigEpoch=floor((vigState(k)-1)*4*OFFDATA.PNEfs)+1;
-        endVigEpoch=floor((vigState(k))*4*OFFDATA.PNEfs);
+        startVigEpoch=floor((vigState(k)-1)*OFFDATA.epochLen*OFFDATA.PNEfs)+1;
+        endVigEpoch=floor((vigState(k))*OFFDATA.epochLen*OFFDATA.PNEfs);
         
         cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
         cleanPNEtime(startVigEpoch:endVigEpoch)=1;
@@ -194,7 +194,6 @@ clear vsPNE
 %%%Create try/catch loop in case of ill-conditioning errors
 try
 
-
    
 if OFFDATA.OptimalK(chanNum)==0
     randPoints=randi(length(clusterVar1),10000,1);
@@ -226,7 +225,9 @@ else
     GMModel = OFFDATA.GMModels.(OFFDATA.ChannelsFullName(chanNum));
 end
 
+
 IDX = cluster(GMModel,allData);
+
 
 
 
@@ -235,7 +236,6 @@ OFF_clust_points=cleanPNEtime(IDX==offCluster);
 
 %% Find off periods 
 %profile on
-
 %%%%% Identify PNE negative half waves with OFF period points detected
 clustOP=sparse(OFF_clust_points,1,logical(1),length(OFFDATA.StartOP),1,length(OFF_clust_points));
 
@@ -255,51 +255,59 @@ end
 
 PNE = abs(PNE); %take absolute values 
 
-%%% Subtract mean in wake periods
-%load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
-wakeState = load(OFFDATA.VSpathin,'-mat','w');
-wakeState = wakeState.('w');
+if isnan(OFFDATA.BaselineAmp(chanNum))
+    %%% Subtract mean in wake periods
+    %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
+    wakeState = load(OFFDATA.VSpathin,'-mat','w');
+    wakeState = wakeState.('w');
 
-% find NREM episodes
-endEpi=find(diff(wakeState)>1); %find last epoch of each episode
-endEpi=[endEpi;length(wakeState)]; %add final episode end
-startEpi=find(diff(wakeState)>1)+1; %find first epoch of each episode
-startEpi=[1;startEpi]; %add first episode start
-numepi=length(startEpi); %number of NREM episodes
-wakeEpochs=[];
+    % find NREM episodes
+    endEpi=find(diff(wakeState)>1); %find last epoch of each episode
+    endEpi=[endEpi;length(wakeState)]; %add final episode end
+    startEpi=find(diff(wakeState)>1)+1; %find first epoch of each episode
+    startEpi=[1;startEpi]; %add first episode start
+    numepi=length(startEpi); %number of NREM episodes
+    wakeEpochs=[];
 
-%Find all WAKE epochs 
-for ep = 1:numepi
-    
-    Startepoch=wakeState(startEpi(ep)); %find start epoch of this NREM episode
-    Endepoch=wakeState(endEpi(ep)); %find second last epoch of this NREM episode
-    
-    if Endepoch-Startepoch<2 %if NREM episode 2 epochs or shorter, there'll be no signal because we're cutting the first and last epoch (i.e. state transitions)
-        continue
-    else %if NREM episode at least 3 epochs, find bins corresponding to the start of the second epoch and end of the second last epoch
-        wakeEpochs=[wakeEpochs; Startepoch Endepoch];
+    %Find all WAKE epochs 
+    for ep = 1:numepi
+
+        Startepoch=wakeState(startEpi(ep)); %find start epoch of this NREM episode
+        Endepoch=wakeState(endEpi(ep)); %find second last epoch of this NREM episode
+
+        if Endepoch-Startepoch<2 %if NREM episode 2 epochs or shorter, there'll be no signal because we're cutting the first and last epoch (i.e. state transitions)
+            continue
+        else %if NREM episode at least 3 epochs, find bins corresponding to the start of the second epoch and end of the second last epoch
+            wakeEpochs=[wakeEpochs; Startepoch Endepoch];
+        end
     end
+
+    wakePNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
+
+    %loop going through all NREM epochs (except for first and last)
+    for ep = 1:length(wakeEpochs)
+
+        Startepoch=wakeEpochs(ep,1); %start of respective epoch
+        Endepoch=wakeEpochs(ep,2); %end of respective epoch
+
+        %fill NaN vectors with pNe signal for this NREM episode
+        StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
+        EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
+        try
+            wakePNE(StartBin:EndBin)=PNE(StartBin:EndBin);
+        end
+    end
+    %concatenate the signal from all selected NREM episodes to get rid of gaps
+    wakePNE=wakePNE(~isnan(wakePNE));
+    wakePNEmean=mean(wakePNE);
+    OFFDATA.BaselineAmp(chanNum)=wakePNEmean;
+    clear wakePNE wakeEpochs
+else
+    wakePNEmean = OFFDATA.BaselineAmp(chanNum);
+    
 end
 
-wakePNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
 
-%loop going through all NREM epochs (except for first and last)
-for ep = 1:length(wakeEpochs)
-
-    Startepoch=wakeEpochs(ep,1); %start of respective epoch
-    Endepoch=wakeEpochs(ep,2); %end of respective epoch
-
-    %fill NaN vectors with pNe signal for this NREM episode
-    StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
-    EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
-    try
-        wakePNE(StartBin:EndBin)=PNE(StartBin:EndBin);
-    end
-end
-%concatenate the signal from all selected NREM episodes to get rid of gaps
-wakePNE=wakePNE(~isnan(wakePNE));
-wakePNEmean=mean(wakePNE);
-clear wakePNE wakeEpochs
 
 relativePNE=PNE-wakePNEmean;
 polarityPNE=ones(length(relativePNE),1);

@@ -505,7 +505,7 @@ if get(findobj('Tag','OFFAD_SCROLL'),'UserData')==1;
     ylabel('Count')
     ax=gca;
     ax.YScale='log';
-    legend('Original','Adjusted')
+    legend('Original','Adjusted','Location','southeast')
     text(0.2,0.8,'Off periods','Units','normalized')
     
     %%%Plot ON periods histogram
