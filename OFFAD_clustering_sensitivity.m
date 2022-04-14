@@ -1,4 +1,4 @@
-function [OFFDATA]=OFFAD_clustering(OFFDATA)
+function [OFFDATA]=OFFAD_clustering_sensitivity(OFFDATA)
 functionTimer = tic;
 
 %Plotting
@@ -66,11 +66,12 @@ OFFDATA.EndOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName
 OFFDATA.AllOP=sparse(repmat(logical(0),PNElength,length(OFFDATA.ChannelsFullName)));
 clear exampleObject 
 
-for chanNum = 1:length(OFFDATA.ChannelsFullName)
+
 %Start channel timer
 channelTimer=tic;
 
-chan=OFFDATA.ChannelsFullName(chanNum);    
+chan='Ch6';
+chanNum=find(OFFDATA.ChannelsFullName==chan);
 display(['Clustering ',char(chan)])
 
 %skip channel if it's not a good channel (was excluded on visual inspection due to bad signals)
@@ -134,11 +135,6 @@ for st=1:length(states)
         startVigEpoch=floor((vigState(k)-1)*OFFDATA.epochLen*OFFDATA.PNEfs)+1;
         endVigEpoch=floor((vigState(k))*OFFDATA.epochLen*OFFDATA.PNEfs);
         
-        if endVigEpoch>PNElength
-            warning('Wrong sampling rate specified')
-        end
-
-        
         cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
         cleanPNEtime(startVigEpoch:endVigEpoch)=1;
     end
@@ -197,7 +193,7 @@ clear vsPNE
 
 %% Gaussian clustering
 %%%Create try/catch loop in case of ill-conditioning errors
-try
+%try
 
    
 if OFFDATA.OptimalK(chanNum)==0
@@ -312,9 +308,13 @@ else
     
 end
 
+wakePNEmean5percent=wakePNEmean/20;
+wakePNEmanPercentiles=wakePNEmean-wakePNEmean5percent*10:wakePNEmean5percent:wakePNEmean+wakePNEmean5percent*10;
 
+for prctle=1:length(wakePNEmanPercentiles)
+display(['Assigning threshold ',char(string(prctle)),'/',char(string(length(wakePNEmanPercentiles)))])
 
-relativePNE=PNE-wakePNEmean;
+relativePNE=PNE-wakePNEmanPercentiles(prctle);
 polarityPNE=ones(length(relativePNE),1);
 polarityPNE(relativePNE<0)=-1;
 nhwStarts=find(diff(polarityPNE)<0)+1; %NHW=negative half waves
@@ -333,7 +333,7 @@ for i = 1:length(nhwStarts)
         OFFperiodIndex(i)=logical(0);
     end
 end
-clear PNE
+
 
 
 %Start times
@@ -370,23 +370,24 @@ clear tempBorders newCounter tempallOP
 % end
 % AllOFF=OFF_clust_points;
 
-catch
-    warning('Failed to cluster channel')
-    StartOFF=[];
-    EndOFF=[];
-    AllOFF=[];
-    
-end
+% catch
+%     warning('Failed to cluster channel')
+%     StartOFF=[];
+%     EndOFF=[];
+%     AllOFF=[];
+%     
+%end
 
 %Store START OFF-P data
-OFFDATA.StartOP(:,chanNum)=sparse(StartOFF,1,logical(1),length(OFFDATA.StartOP),1,length(StartOFF));
+OFFDATA.StartOP(:,prctle)=sparse(StartOFF,1,logical(1),length(OFFDATA.StartOP),1,length(StartOFF));
 
 %Store END OFF-P data
-OFFDATA.EndOP(:,chanNum)=sparse(EndOFF,1,logical(1),length(OFFDATA.StartOP),1,length(EndOFF));
+OFFDATA.EndOP(:,prctle)=sparse(EndOFF,1,logical(1),length(OFFDATA.StartOP),1,length(EndOFF));
 
 %Store ALL OFF-P data
-OFFDATA.AllOP(:,chanNum)=sparse(AllOFF,1,logical(1),length(OFFDATA.StartOP),1,length(AllOFF));
+OFFDATA.AllOP(:,prctle)=sparse(AllOFF,1,logical(1),length(OFFDATA.StartOP),1,length(AllOFF));
 
+end
 
 clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
       clusterIDX_total clustVar1ThreshScaled clustVar2ThreshScaled StartOFF EndOFF ...
@@ -395,7 +396,7 @@ clear OFFperiod OFF_clust_points ON_clust_points clusterVar1 clusterVar2 ...
 %Display total channel clustering time
 channelTime=toc(channelTimer);
 display(['Channel clustering time = ',char(string(channelTime)),' sec'])
-end
+
 
 %Display total function clustering time
 functionTime=toc(functionTimer);
