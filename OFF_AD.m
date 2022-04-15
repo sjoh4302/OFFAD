@@ -6,8 +6,8 @@ function OFF_AD( arg )
 if nargin < 1
     hh = findobj('Type','figure','-regexp','Tag','OFFAD*');
     if ~isempty(hh)
-        disp('OFFAD warning: there can be only one OFFAD window, closing old one');
-        close(hh);  
+        warning('There can be only one OFFAD window open, closing existing windows');
+        delete(hh);  
     end
     
     evalin('base', 'global OFFDATA');

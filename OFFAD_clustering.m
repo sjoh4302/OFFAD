@@ -135,12 +135,11 @@ for st=1:length(states)
         endVigEpoch=floor((vigState(k))*OFFDATA.epochLen*OFFDATA.PNEfs);
         
         if endVigEpoch>PNElength
-            warning('Wrong sampling rate specified')
-        end
-
-        
-        cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
-        cleanPNEtime(startVigEpoch:endVigEpoch)=1;
+            warning('Wrong sampling rate specified, hypnogram will be misaligned')
+        else
+            cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
+            cleanPNEtime(startVigEpoch:endVigEpoch)=1;
+        end             
     end
 end
 %concatenate the signal from all selected episodes to get rid of gaps
@@ -402,7 +401,7 @@ functionTime=toc(functionTimer);
 display(['Total clustering time = ',char(string(functionTime)),' sec'])
 
 %Return to main menu    
-close(findobj('Tag','OFFAD_IMPORT'));
+delete(findobj('Tag','OFFAD_IMPORT'));
 OFF_AD('redraw');
 set(findobj('Tag','OFFAD_CLUSTER'),'Visible','Off');
 

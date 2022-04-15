@@ -120,7 +120,7 @@ uicontrol(g.Preclustering,'Style', 'popupmenu','String',OFFDATA.ChannelsFullName
 uiwait
 test=get(findobj('Tag','DoneButton'),'UserData');
 set(findobj('Tag','OFFAD_IMPORT'),'Visible','On')
-close(findobj('Tag','OFFAD_PRECLUSTER'))
+delete(findobj('Tag','OFFAD_PRECLUSTER'))
 
 
 function plotClustNum(src,~)
