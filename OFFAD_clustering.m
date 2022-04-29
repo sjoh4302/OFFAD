@@ -135,7 +135,7 @@ for st=1:length(states)
         endVigEpoch=floor((vigState(k))*OFFDATA.epochLen*OFFDATA.PNEfs);
         
         if endVigEpoch>PNElength
-            warning('Wrong sampling rate specified, hypnogram will be misaligned')
+            warning('Epoch skipped. PNE shorter than expected. Check sampling rate is correct')
         else
             cleanPNE(startVigEpoch:endVigEpoch)=PNE(startVigEpoch:endVigEpoch);
             cleanPNEtime(startVigEpoch:endVigEpoch)=1;
