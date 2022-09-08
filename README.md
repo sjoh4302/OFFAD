@@ -4,7 +4,7 @@
 OFFAD is an open source signal processing GUI for detecting OFF periods: periods of generalized neuronal silence associated with NREM slow waves. The pipeline consists of a Guassian clustering step followed by a visual and statistical presentation of the resulting OFF periods to allow further curation by the user.  
 
 # Installing
-You can clone this repository or download a ZIP file by clicking the **Code** button.
+You can clone this repository or download a ZIP file by clicking the **Code** button. OFFAD requires the **Statistics and Machine learning** and **Signal processing** toolboxes.
 
 # Starting OFFAD
 1. Open MATLAB 
