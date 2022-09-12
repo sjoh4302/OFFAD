@@ -1,11 +1,24 @@
-function [OFFDATA]=OFFAD_importdata
+function OFFAD_importdata
+%
+% Import page: Load data for OFF period detection
+%
+% Author: Christian Harding 2022
+% OFF Period Automated Detection (OFFAD) toolbox
+% christian.harding@sjc.ox.uk
+%
+% Requires:
+% - Statistics and Machine learning toolbox
+% - Signal processing toolbox
+%
+
 % Create structure to hold all clustering info
 OFFDATA=[];
+
 
 g.Main = findobj('tag', 'OFFAD');
 set(g.Main,'Visible','off')
 
-%Settings
+% Figure plot settings
 numLine=9;
 centres=[0:1/(numLine+1):1];
 centres=flip(centres(2:end-1));
@@ -13,7 +26,7 @@ centreDif=diff(centres(1:2));
 boxHeighthhalf=abs((2.5*centreDif)/6);
 
 
-%Function
+% Callback to load files from directory using GUI
 commandload = [ '[filename, filepath] = uigetfile(''*'', ''Select file'');' ...
                     'if filename(1) ~=0,' ...
                     '   set(findobj(''parent'', gcbf, ''tag'', tagtest), ''string'', [ filepath filename ]);' ...
@@ -42,7 +55,7 @@ g.Import = figure('Units','points', ...
     'Menubar','none',...
 	'Tag','OFFAD_IMPORT',...
     'CloseRequestFcn',['set(findobj(''Tag'',''OFFAD''),''Visible'',''on'');'...
-    'close(findobj(''Tag'',''OFFAD_IMPORT''))']);
+    'delete(findobj(''Tag'',''OFFAD_IMPORT''))']);
 
 
 %% Line 1
