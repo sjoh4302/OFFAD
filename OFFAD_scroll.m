@@ -82,8 +82,9 @@ allCol(allEpoch=='W',1)=0; allCol(allEpoch=='W',2)=0.447; allCol(allEpoch=='W',3
 allCol(allEpoch=='R',2)=0.7;
 allCol(allEpoch=='N',3)=0;
 
-subplot('Position',[0.12 0.84 0.72 0.14]);
+s1=subplot('Position',[0.12 0.84 0.72 0.14]);
 scatter(1:ceil(length(categorical(allEpoch))),categorical(allEpoch),10,allCol,'.')
+s1.ButtonDownFcn=@changeTime;
 set(gca,'Tag','topPlot')
 set(gca,'NextPlot','Add')
 set(gca,'xtick',[])
@@ -337,12 +338,12 @@ uicontrol(g.Scroll,'Style', 'text','String','Recording time(s)',...
 
 
 
-
-
-
-
-
-
+function changeTime(source,event)
+    display(event.IntersectionPoint)
+    set(findobj('Tag','scrollTime'),'String',event.IntersectionPoint(1)*OFFDATA.epochLen)
+    drawOFFP
+end        
+        
 
 
 function drawOFFP(~,~)
