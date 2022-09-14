@@ -14,14 +14,13 @@ function [OFFDATA,test]=OFFAD_preclustering(importDataVar)
 % Clear import window
 set(findobj('Tag','OFFAD_IMPORT'),'Visible','Off')
 
+%Get screensize to set figure position
+screensize = get( groot, 'Screensize' );   
+   
 % Create preclustering window
-g.Preclustering = figure('Units','points', ...
-... %	'Colormap','gray', ...
-	'PaperPosition',[18 180 576/2 432], ...
-	'PaperUnits','points', ...
-	'name', 'OFFAD (OFF_period Automated Detection) - Pre-clustering', ... 
+g.Preclustering = figure('name', 'OFFAD (OFF_period Automated Detection) - Pre-clustering', ... 
 	'numbertitle', 'off', ...
-	'Position',[200 100 800 450], ...
+	'Position',[screensize(3)/6,screensize(4)/8,4*screensize(3)/6,screensize(4)/1.4], ...
     'Toolbar','none',...
     'Menubar','none',...
 	'Tag','OFFAD_PRECLUSTER',...
@@ -74,7 +73,9 @@ for nameChan=1:length(OFFDATA.ChannelsFullName)
     OFFDATA.GMModels.(OFFDATA.ChannelsFullName(nameChan))=[];
 end
 
-%% Initialise vigilance state data
+%%% Precluster data
+% Step 1: Extract NREM epochs to train GMM
+
 % Extract NREM episodes (consecutive NREM epochs)
 stage='nr';
 %load vigilance state information for this animal and recording date ('nr' are all artefact free NREM epochs)
@@ -153,6 +154,13 @@ try
 end
 
 drawnow
+
+% Step 2: Extract MUA signal from NREM epochs for training
+%{
+1) Convert it into absolute values
+2) Extract and concatenate NREM episodes only
+%}
+
 % Load MUA signal for selected channel
 channelString=axesHandles(1).String;
 channelValue=axesHandles(1).Value;
@@ -172,14 +180,14 @@ if class(PNE)=="single"
     PNE = int16(PNE);
 end
 
-% Convert to absolute values
-PNE = abs(PNE); 
-
 % Return warning if incorrect amplitude detected
 if length(unique(PNE))<4
     warning('Wrong amplitude units specified')
     return
 end
+
+% Convert to absolute values
+PNE = abs(PNE);
 
 % Create empty variables to store MUA signals from NREM only
 vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
@@ -208,8 +216,9 @@ clear PNE
 
 
 
-% Apply smoothing windows to MUA signal
-% Heavy smoothing
+% Step 3: Apply smoothing windows to MUA signal
+
+% Apply heavy smoothing (Guassian window) to MUA signals
 if OFFDATA.clustVar1Select==1
     winSize=(OFFDATA.clustVar1Smooth*2)+1;
     w1=gausswin(winSize);
@@ -227,7 +236,7 @@ elseif OFFDATA.clustVar1Select==2
     clear LB_freq percOverlap F
 end
 
-% Light smoothing
+% Apply light smoothing (Guassian window) to MUA signals
 if OFFDATA.clustVar2Select==1
     winSize=(OFFDATA.clustVar2Smooth*2)+1;
     w2=gausswin(winSize);
@@ -245,7 +254,8 @@ elseif OFFDATA.clustVar2Select==2
     clear LB_freq percOverlap F
 end
 
-% Cluster example data for histograms (0.1% sample of NREM data) 
+% Step 4: Fit Gaussian mixture model to establish components
+% Cluster example data for histograms (0.1% sample of NREM data)
 
 % Select random NREM MUA data points
 randPoints=randi(length(clusterVar1),round(length(vigState)*4*OFFDATA.PNEfs*(1/1000)),1);
