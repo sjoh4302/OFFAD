@@ -341,7 +341,6 @@ uicontrol(g.Scroll,'Style', 'text','String','Recording time(s)',...
 
 % Function to change the time in view by clicking on hypnogram
 function changeTime(source,event)
-    display(event.IntersectionPoint)
     set(findobj('Tag','scrollTime'),'String',event.IntersectionPoint(1)*OFFDATA.epochLen)
     drawOFFP
 end        
@@ -404,28 +403,41 @@ function drawOFFP(~,~)
 
 
         if ~isempty(tmpOFFStarts)
-            % Fix edge window problems
-            % Add previous OFF period before window
+            % Fix edge window problems...
+            %If window starts in an OFF state  
             try
-            tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startPNE-...
+                % Add previous OFF start before window
+                tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startPNE-...
                         find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFStarts];
-                %If window starts in an ON state     
+                % Add previous OFF end before window does not start in OFF state     
                 if tmpOFFStarts(2)<=tmpOFFEnds(1) 
                      tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
                             find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
                 end 
             end
+            
+            %If window starts in an OFF state
             try
-
-            % Add next OFF period after window
-            tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
+                % Add next OFF end after window
+                tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
                          sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
-                %If window ends in ON state
+                % Add next OFF start before window does not end in OFF state     
                 if tmpOFFEnds(end-1)>=tmpOFFStarts(end)
                     tmpOFFStarts=[tmpOFFStarts;max(find(OFFDATA.StartOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
                              sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
                 end
             end
+            
+            % Account for windows with only 1 start
+            if length(tmpOFFStarts)>length(tmpOFFEnds)
+                tmpOFFStarts=tmpOFFStarts(2:end);
+            end
+            
+            % Account for windows with only 1 end
+            if length(tmpOFFEnds)>length(tmpOFFStarts)
+                tmpOFFEnds=tmpOFFEnds(1:end-1);
+            end
+            
 
             % Apply maximum tolerated intra-OFF period interval threshold
             allIntThresh=get(findobj('Tag','maxInterVal'),'UserData');

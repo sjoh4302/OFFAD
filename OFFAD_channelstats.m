@@ -1,4 +1,17 @@
 function [OFFDATA]=OFFAD_channelstats(OFFDATA,plotType)
+%
+% Channel statistics page: Compute OFF/ON period statistics for each channel
+%
+% Author: Christian Harding 2022
+% OFF Period Automated Detection (OFFAD) toolbox
+% christian.harding@sjc.ox.uk
+%
+% Requires:
+% - Statistics and Machine learning toolbox
+% - Signal processing toolbox
+%
+
+
 %Close loading window
 g.Cluster = findobj('tag', 'OFFAD_CLUSTER');
 close(g.Cluster)

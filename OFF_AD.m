@@ -44,7 +44,7 @@ if nargin < 1 % Starting new study
         'FontWeight','bold','FontSize',20,...
         'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
         'Position',[0.2 0.4 0.6 0.25],...
-        'Tag','M_IMPORT',...
+        'Tag','M_IMPORT_PRE',...
         'Callback',['[filename, filepath] = uigetfile(''*'', ''Select file''); [OFFDATA] = OFFAD_preset([filepath,filename]);clear filename filepath']);
 
     % Button load and view the output from a previous study
@@ -54,16 +54,19 @@ if nargin < 1 % Starting new study
         'Tag','M_LOAD',...
         'Position',[0.2 0.1 0.6 0.25],'Callback',['uiload;' 'if ~isempty(OFFDATA);'...
         'OFF_AD(''redraw'');' 'end;']);
-
+    
 else % Viewing output data from current or previous study
     
     % Make other tabs (data import, clustering etc.) invisible
     set(findobj('Tag','M_IMPORT'),'Visible','Off')
+    set(findobj('Tag','M_IMPORT_PRE'),'Visible','Off')
     set(findobj('Tag','M_LOAD'),'Visible','Off')
     set(findobj('Tag','OFFAD'),'Visible','On')
     
+        
     g.Main=findobj('Tag','OFFAD');
     global OFFDATA
+    
     
     % Display name of study being viewed
     uicontrol(g.Main,'Style', 'text','String',['Dataset: ' OFFDATA.datasetname],...
@@ -102,7 +105,7 @@ else % Viewing output data from current or previous study
         'Position',[0.2 0.02 0.6 0.15],...
         'Tag','M_SAVECURR',...
         'Callback','uisave(''OFFDATA'',OFFDATA.datasetname)');
- 
- 
+    
+     
 end
 

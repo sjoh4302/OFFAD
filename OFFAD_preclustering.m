@@ -29,6 +29,7 @@ g.Preclustering = figure('name', 'OFFAD (OFF_period Automated Detection) - Pre-c
      
 
 % Create empty directory to hold clustering information
+global OFFDATA
 OFFDATA=[];
 
 % Fill with data passed from import window
