@@ -11,11 +11,14 @@ You can clone this repository or download a ZIP file by clicking the **Code** bu
 2. Navigate to the **OffPeriodDetection** folder containing the OFFAD scripts
 3. Run the following in MATLAB
 ```
-OFF_AD
+OFFAD
 ```
-4. Alternatively, open the **OFF_AD.m** script and click **Run**
+4. Alternatively, open the **OFFAD.m** script and click **Run**
 
 # Using OFFAD
+
+[NOTE] See bottom of README for instructions on running a demo using example data
+
 Upon opening OFFAD, users will be presented with the following choices
 - **New study (no presets)** - Select this option to begin clustering a new dataset
 - **New study (use presets)** - Select this option to cluster new data using the clustering settings from a previous study
@@ -84,4 +87,9 @@ If the user has adjusted the OFF-periods in the scrolling window using the minim
 - **OFFthresh** - Minimum OFF-period duration threshold
 - **ONthresh** - Maximum permitted OFF-period interuption threshold
 - **StatsOPadjusted** - See above 
+
+# Demo
+The **ExampleData** folder contains correctly formatted example data to demonstrate the functionality of OFFAD. Users can either:
+- Start a new study using the Example_VSspec, Example_MUA_498Hz and Example_LFP_256Hz data and the **New study (no presets)** or **New study (use presets)** functionalities
+- View the results of a previous study run on this data using the OFFAD_output_example data and the **Load previous study** functionality
 
