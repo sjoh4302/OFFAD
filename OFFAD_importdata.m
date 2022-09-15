@@ -14,7 +14,7 @@ function OFFAD_importdata
 % Create structure to hold all clustering info
 OFFDATA=[];
 
-
+% Clear previous page
 g.Main = findobj('tag', 'OFFAD');
 set(g.Main,'Visible','off')
 
@@ -33,7 +33,7 @@ commandload = [ '[filename, filepath] = uigetfile(''*'', ''Select file'');' ...
                     'end;' ...
                     'clear filename filepath tagtest;' ];
 
-%Get screensize to set figure position
+% Get screensize to set figure position
 screensize = get( groot, 'Screensize' );   
     
 % Create figure for data import

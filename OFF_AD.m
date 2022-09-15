@@ -11,7 +11,6 @@ function OFF_AD( arg )
 % - Signal processing toolbox
 %
 
-
 if nargin < 1 % Starting new study
     % Clear exisiting GUI
     hh = findobj('Type','figure','-regexp','Tag','OFFAD*');
@@ -52,7 +51,7 @@ if nargin < 1 % Starting new study
         'FontWeight','bold','FontSize',20,...
         'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
         'Tag','M_LOAD',...
-        'Position',[0.2 0.1 0.6 0.25],'Callback',['uiload;' 'if ~isempty(OFFDATA);'...
+        'Position',[0.2 0.1 0.6 0.25],'Callback',['uiload;' 'global OFFDATA;' 'if ~isempty(OFFDATA);'...
         'OFF_AD(''redraw'');' 'end;']);
     
 else % Viewing output data from current or previous study
@@ -67,6 +66,7 @@ else % Viewing output data from current or previous study
     g.Main=findobj('Tag','OFFAD');
     global OFFDATA
     
+    OFFDATA
     
     % Display name of study being viewed
     uicontrol(g.Main,'Style', 'text','String',['Dataset: ' OFFDATA.datasetname],...
