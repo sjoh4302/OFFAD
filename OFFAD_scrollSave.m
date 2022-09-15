@@ -43,14 +43,14 @@ for i = 1:numChan
     if ~isempty(adjOFFStarts)
 
         % Apply maximum tolerated intra-OFF period interval threshold
-        chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*maxInt(i));
+        chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.MUAfs/1000*maxInt(i));
         chooseONstart=~[0;chooseON];
         chooseONend=~[chooseON;0];
         adjOFFStarts=adjOFFStarts(chooseONstart);
         adjOFFEnds=adjOFFEnds(chooseONend);
 
         % Apply minimum OFF period duration threshold
-        chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*minDur(i));
+        chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.MUAfs/1000*minDur(i));
         adjOFFStarts=adjOFFStarts(chooseOFF);
         adjOFFEnds=adjOFFEnds(chooseOFF);
     end

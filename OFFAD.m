@@ -1,4 +1,4 @@
-function OFF_AD( arg )
+function OFFAD( arg )
 %
 % Opening page: Start new study or load previous
 %
@@ -52,7 +52,7 @@ if nargin < 1 % Starting new study
         'BackgroundColor',[0.3 0.8 0.8],'Units','normalized',...
         'Tag','M_LOAD',...
         'Position',[0.2 0.1 0.6 0.25],'Callback',['uiload;' 'global OFFDATA;' 'if ~isempty(OFFDATA);'...
-        'OFF_AD(''redraw'');' 'end;']);
+        'OFFAD(''redraw'');' 'end;']);
     
 else % Viewing output data from current or previous study
     
@@ -66,8 +66,7 @@ else % Viewing output data from current or previous study
     g.Main=findobj('Tag','OFFAD');
     global OFFDATA
     
-    OFFDATA
-    
+       
     % Display name of study being viewed
     uicontrol(g.Main,'Style', 'text','String',['Dataset: ' OFFDATA.datasetname],...
         'FontWeight','bold','FontSize',18,...

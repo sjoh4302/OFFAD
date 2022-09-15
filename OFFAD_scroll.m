@@ -25,9 +25,9 @@ drawnow
 
 % Label MUA axis
 subplot('Position',[0.0 0 0.04 1],'box','off','XTickLabel',[],'XTick',[],'YTickLabel',[],'YTick',[],'XColor','None','YColor','None','Color','None')
-xlimPNE=get(gca,'XLim');
-ylimPNE=get(gca,'YLim');
-ht = text(0.2*xlimPNE(1)+0.2*xlimPNE(2),0.5*ylimPNE(1)+0.5*ylimPNE(2),['PNE (', char(OFFDATA.PNEunit),')']);
+xlimMUA=get(gca,'XLim');
+ylimMUA=get(gca,'YLim');
+ht = text(0.2*xlimMUA(1)+0.2*xlimMUA(2),0.5*ylimMUA(1)+0.5*ylimMUA(2),['MUA (', char(OFFDATA.MUAunit),')']);
 set(ht,'Rotation',90)
 set(ht,'FontSize',10)
 set(ht,'Color',[0, 0.4470, 0.7410])
@@ -44,9 +44,9 @@ set(ht,'Color',[0.8500, 0.3250, 0.0980])
 set(ht,'FontWeight','bold')
 
 % Load entire recording MUA data to be subsampled for plotting
-PNEtmp=load(OFFDATA.PNEpathin,OFFDATA.ChannelsFullName{:});
-PNEexampleObject = matfile(OFFDATA.PNEpathin);
-PNElength=size(PNEexampleObject,OFFDATA.ChannelsFullName(1),2);
+MUAtmp=load(OFFDATA.MUApathin,OFFDATA.ChannelsFullName{:});
+MUAexampleObject = matfile(OFFDATA.MUApathin);
+MUAlength=size(MUAexampleObject,OFFDATA.ChannelsFullName(1),2);
 
 % Load and process entire recording LFP data [OPTIONAL]
 if isempty(OFFDATA.LFPpathin)==0
@@ -82,7 +82,7 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',{'Hypnogram','Average LFP'},...
 
 
 % Load vigilance state info (scored in epochs)
-allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen),1));
+allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.MUAfs/OFFDATA.epochLen),1));
 allCol=repmat([0,0,0],length(allEpoch),1);
 vigStateNames={'w','w1','mt','r','r3','nr','nr2','ma'};
 vigInf=load(OFFDATA.VSpathin,vigStateNames{:});
@@ -105,7 +105,7 @@ set(gca,'Tag','topPlot')
 set(gca,'NextPlot','Add')
 set(gca,'xtick',[])
 set(gca,'xcolor',[1,1,1])
-set(gca,'xlim',[0,ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen)])
+set(gca,'xlim',[0,ceil(length(OFFDATA.StartOP)/OFFDATA.MUAfs/OFFDATA.epochLen)])
 xline(gca,1,'LineWidth',2,'Color',allCol(1,:))
 
 % Change vigilance state names from abbreviation to full
@@ -130,7 +130,7 @@ clear vigStateNames
 uipanel(g.Scroll,'Position',[0.1 0. 0.7 0.065])
 
 % Editable box for MUA scale selection
-uicontrol(g.Scroll,'Style', 'text','String','PNE max',...
+uicontrol(g.Scroll,'Style', 'text','String','MUA max',...
     'FontWeight','bold','FontSize',7,...
     'Units','normalized',...
     'Position',[0.005 0.04 0.06 0.03]);
@@ -139,7 +139,7 @@ uicontrol(g.Scroll,'Style', 'edit','String',150,...
     'Units','normalized',...
     'BackgroundColor',[1 1 1],...
     'Position',[0.005 0.01 0.06 0.03],...
-    'Tag','PNEscale',...
+    'Tag','MUAscale',...
     'Callback',@drawOFFP);
 
 % Editable box for LFP scale selection [OPTIONAL]
@@ -355,8 +355,8 @@ function drawOFFP(~,~)
     if newTime<0
         newTime=num2str(0);  
     end
-    if newTime>round(length(OFFDATA.StartOP)/OFFDATA.PNEfs)-5
-        newTime=num2str(((floor(((length(OFFDATA.StartOP)/OFFDATA.PNEfs)/OFFDATA.epochLen))-1)*4));
+    if newTime>round(length(OFFDATA.StartOP)/OFFDATA.MUAfs)-5
+        newTime=num2str(((floor(((length(OFFDATA.StartOP)/OFFDATA.MUAfs)/OFFDATA.epochLen))-1)*4));
     end
     set(findobj('Tag','scrollTime'),'String',newTime); %set new time
 
@@ -365,16 +365,16 @@ function drawOFFP(~,~)
     set(findobj('Tag','maxInter'),'Value',str2num(get(findobj('Tag','maxInterVal'),'String')));
 
     startSec=str2num(get(findobj('Tag','scrollTime'),'String'));
-    startPNE=round(startSec/(1/OFFDATA.PNEfs))+1;
-    endPNE=round(startSec/(1/OFFDATA.PNEfs))+ceil(OFFDATA.PNEfs*4);
+    startMUA=round(startSec/(1/OFFDATA.MUAfs))+1;
+    endMUA=round(startSec/(1/OFFDATA.MUAfs))+ceil(OFFDATA.MUAfs*4);
 
-    tmpPNEtime=[startPNE/OFFDATA.PNEfs:1/OFFDATA.PNEfs:endPNE/OFFDATA.PNEfs];
-    startLFP=round(mod(startPNE/OFFDATA.PNEfs,1/OFFDATA.LFPfs)+startPNE/OFFDATA.PNEfs/(1/OFFDATA.LFPfs));
-    endLFP=round(mod(endPNE/OFFDATA.PNEfs,1/OFFDATA.LFPfs)+endPNE/OFFDATA.PNEfs/(1/OFFDATA.LFPfs));
+    tmpMUAtime=[startMUA/OFFDATA.MUAfs:1/OFFDATA.MUAfs:endMUA/OFFDATA.MUAfs];
+    startLFP=round(mod(startMUA/OFFDATA.MUAfs,1/OFFDATA.LFPfs)+startMUA/OFFDATA.MUAfs/(1/OFFDATA.LFPfs));
+    endLFP=round(mod(endMUA/OFFDATA.MUAfs,1/OFFDATA.LFPfs)+endMUA/OFFDATA.MUAfs/(1/OFFDATA.LFPfs));
     tmpLFPtime=[startLFP/OFFDATA.LFPfs:1/OFFDATA.LFPfs:endLFP/OFFDATA.LFPfs];
 
     % Get scales of Y axes for plotting
-    PNEscale=str2num(get(findobj('Tag','PNEscale'),'String'));
+    MUAscale=str2num(get(findobj('Tag','MUAscale'),'String'));
     if isempty(OFFDATA.LFPpathin)==0
         LFPscale=str2num(get(findobj('Tag','LFPscale'),'String'));
     end
@@ -393,13 +393,13 @@ function drawOFFP(~,~)
 
         subplot('Position',[0.08 subplot2(i) 0.76 subplot4]);
         yyaxis left
-        stem(tmpPNEtime,PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE:endPNE),'-','LineWidth',1,'Marker','none','ShowBaselin','off')
+        stem(tmpMUAtime,MUAtmp.(OFFDATA.ChannelsFullName(i))(startMUA:endMUA),'-','LineWidth',1,'Marker','none','ShowBaselin','off')
         hold on
 
 
         % Select which OFF periods to plot (duration/interval criteria)
-        tmpOFFStarts=find(OFFDATA.StartOP(startPNE:endPNE,i));
-        tmpOFFEnds=find(OFFDATA.EndOP(startPNE:endPNE,i));
+        tmpOFFStarts=find(OFFDATA.StartOP(startMUA:endMUA,i));
+        tmpOFFEnds=find(OFFDATA.EndOP(startMUA:endMUA,i));
 
 
         if ~isempty(tmpOFFStarts)
@@ -407,12 +407,12 @@ function drawOFFP(~,~)
             %If window starts in an OFF state  
             try
                 % Add previous OFF start before window
-                tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startPNE-...
-                        find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFStarts];
+                tmpOFFStarts=[max(find(OFFDATA.StartOP(:,i),sum((startMUA-...
+                        find(OFFDATA.StartOP(:,i)))>0)))-startMUA+1;tmpOFFStarts];
                 % Add previous OFF end before window does not start in OFF state     
                 if tmpOFFStarts(2)<=tmpOFFEnds(1) 
-                     tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startPNE-...
-                            find(OFFDATA.StartOP(:,i)))>0)))-startPNE+1;tmpOFFEnds];
+                     tmpOFFEnds=[max(find(OFFDATA.EndOP(:,i),sum((startMUA-...
+                            find(OFFDATA.StartOP(:,i)))>0)))-startMUA+1;tmpOFFEnds];
                 end 
             end
             
@@ -420,11 +420,11 @@ function drawOFFP(~,~)
             try
                 % Add next OFF end after window
                 tmpOFFEnds=[tmpOFFEnds;max(find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
-                         sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
+                         sum((find(OFFDATA.EndOP(:,i)))-endMUA>1)+1))-startMUA+1];
                 % Add next OFF start before window does not end in OFF state     
                 if tmpOFFEnds(end-1)>=tmpOFFStarts(end)
                     tmpOFFStarts=[tmpOFFStarts;max(find(OFFDATA.StartOP(:,i),length(find(OFFDATA.EndOP(:,i)))-...
-                             sum((find(OFFDATA.EndOP(:,i)))-endPNE>1)+1))-startPNE+1];
+                             sum((find(OFFDATA.EndOP(:,i)))-endMUA>1)+1))-startMUA+1];
                 end
             end
             
@@ -441,7 +441,7 @@ function drawOFFP(~,~)
 
             % Apply maximum tolerated intra-OFF period interval threshold
             allIntThresh=get(findobj('Tag','maxInterVal'),'UserData');
-            chooseON=tmpOFFStarts(2:end)-tmpOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*allIntThresh(i));
+            chooseON=tmpOFFStarts(2:end)-tmpOFFEnds(1:end-1)-1<(OFFDATA.MUAfs/1000*allIntThresh(i));
             chooseONstart=~[0;chooseON];
             chooseONend=~[chooseON;0];
             tmpOFFStarts=tmpOFFStarts(chooseONstart);
@@ -449,22 +449,22 @@ function drawOFFP(~,~)
 
             % Apply minimum OFF period duration threshold
             allDurThresh=get(findobj('Tag','minDurVal'),'UserData');
-            chooseOFF=tmpOFFEnds-tmpOFFStarts+1>(OFFDATA.PNEfs/1000*allDurThresh(i));
+            chooseOFF=tmpOFFEnds-tmpOFFStarts+1>(OFFDATA.MUAfs/1000*allDurThresh(i));
             tmpOFFStarts=tmpOFFStarts(chooseOFF);
             tmpOFFEnds=tmpOFFEnds(chooseOFF);
 
             % Trim start/end times to window length
             tmpOFFStarts(tmpOFFStarts<1)=1;
-            tmpOFFEnds(tmpOFFEnds>ceil(OFFDATA.PNEfs*4))=ceil(OFFDATA.PNEfs*4);
+            tmpOFFEnds(tmpOFFEnds>ceil(OFFDATA.MUAfs*4))=ceil(OFFDATA.MUAfs*4);
 
             tmpOFFall=[];
             for k = 1:length(tmpOFFStarts)
                 tmpOFFall=[tmpOFFall,[tmpOFFStarts(k):tmpOFFEnds(k)]];
             end
 
-            stem(tmpPNEtime(tmpOFFall),PNEtmp.(OFFDATA.ChannelsFullName(i))(startPNE-1+tmpOFFall),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
+            stem(tmpMUAtime(tmpOFFall),MUAtmp.(OFFDATA.ChannelsFullName(i))(startMUA-1+tmpOFFall),'-','LineWidth',1,'Marker','none','ShowBaselin','off','Color','red','LineStyle','-')
         end
-        ylim([-PNEscale PNEscale])
+        ylim([-MUAscale MUAscale])
         clear chooseOFF tmpOFFStarts tmpOFFEnds tmpOFFall
 
         % Plot LFP if present
@@ -476,7 +476,7 @@ function drawOFFP(~,~)
         end
 
         % Set axes limits
-        xlim([tmpPNEtime(1) tmpPNEtime(end)])
+        xlim([tmpMUAtime(1) tmpMUAtime(end)])
         set(gca,'Box','off')
         ax=gca;
         ax.XAxis.Exponent=0;
@@ -488,7 +488,7 @@ function drawOFFP(~,~)
     end
 
     % Set x-axis to show start/end of segment
-    set(gca,'XLim',[round(tmpPNEtime(1)),round(tmpPNEtime(end))])
+    set(gca,'XLim',[round(tmpMUAtime(1)),round(tmpMUAtime(end))])
 
     % Draw ON-OFF period duration histograms
     try
@@ -499,21 +499,21 @@ function drawOFFP(~,~)
              adjOFFEnds=find(OFFDATA.EndOP(:,i));
 
             % Apply maximum tolerated intra-OFF period interval threshold
-            chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
+            chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.MUAfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
             chooseONstart=~[0;chooseON];
             chooseONend=~[chooseON;0];
             adjOFFStarts=adjOFFStarts(chooseONstart);
             adjOFFEnds=adjOFFEnds(chooseONend);
 
             % Apply minimum OFF period duration threshold
-            chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
+            chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.MUAfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
             adjOFFStarts=adjOFFStarts(chooseOFF);
             adjOFFEnds=adjOFFEnds(chooseOFF);
          end 
 
         % Plot OFF period histrogram
-        [oldOFF,oldBins]=histcounts((find(OFFDATA.EndOP(:,i))-find(OFFDATA.StartOP(:,i))+1)*1000/OFFDATA.PNEfs,0:1000/OFFDATA.PNEfs:200);
-        [newOFF,newBins]=histcounts((adjOFFEnds-adjOFFStarts+1)*1000/OFFDATA.PNEfs,0:1000/OFFDATA.PNEfs:200);
+        [oldOFF,oldBins]=histcounts((find(OFFDATA.EndOP(:,i))-find(OFFDATA.StartOP(:,i))+1)*1000/OFFDATA.MUAfs,0:1000/OFFDATA.MUAfs:200);
+        [newOFF,newBins]=histcounts((adjOFFEnds-adjOFFStarts+1)*1000/OFFDATA.MUAfs,0:1000/OFFDATA.MUAfs:200);
         subplot('Position',[0.91 0.56 0.08 0.38])
         cla
         a1=area(oldBins(1:end-1)+diff(oldBins)/2,oldOFF,'LineStyle','none');
@@ -529,8 +529,8 @@ function drawOFFP(~,~)
 
         % Plot ON periods histogram
         [oldON,oldBins]=histcounts((find(OFFDATA.StartOP(:,i),length(find(OFFDATA.StartOP(:,i)))-1,'last')-...
-            find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-1)-1)*1000/OFFDATA.PNEfs,0:1000/OFFDATA.PNEfs:200);
-        [newON,newBins]=histcounts((adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1)*1000/OFFDATA.PNEfs,0:1000/OFFDATA.PNEfs:200);
+            find(OFFDATA.EndOP(:,i),length(find(OFFDATA.EndOP(:,i)))-1)-1)*1000/OFFDATA.MUAfs,0:1000/OFFDATA.MUAfs:200);
+        [newON,newBins]=histcounts((adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1)*1000/OFFDATA.MUAfs,0:1000/OFFDATA.MUAfs:200);
         subplot('Position',[0.91 0.15 0.08 0.38])
         cla
         a1=area(oldBins(1:end-1)+diff(oldBins)/2,oldON,'LineStyle','none');
@@ -568,7 +568,7 @@ function drawOFFP(~,~)
             scatter(1:ceil(length(categorical(allEpoch))),categorical(allEpoch),10,allCol,'.')
             set(gca,'xtick',[])
             set(gca,'xcolor',[1,1,1])
-            set(gca,'xlim',[0,ceil(length(OFFDATA.StartOP)/OFFDATA.PNEfs/OFFDATA.epochLen)])
+            set(gca,'xlim',[0,ceil(length(OFFDATA.StartOP)/OFFDATA.MUAfs/OFFDATA.epochLen)])
             xline(gca,1,'LineWidth',2,'Color',allCol(1,:))
 
 
@@ -581,27 +581,27 @@ function drawOFFP(~,~)
             adjOFFEnds=find(OFFDATA.EndOP(:,swChan));
 
             % Apply maximum tolerated intra-OFF period interval threshold
-            chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
+            chooseON=adjOFFStarts(2:end)-adjOFFEnds(1:end-1)-1<(OFFDATA.MUAfs/1000*str2num(get(findobj('Tag','maxInterVal'),'String')));
             chooseONstart=~[0;chooseON];
             chooseONend=~[chooseON;0];
             adjOFFStarts=adjOFFStarts(chooseONstart);
             adjOFFEnds=adjOFFEnds(chooseONend);
 
             % Apply minimum OFF period duration threshold
-            chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.PNEfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
+            chooseOFF=adjOFFEnds-adjOFFStarts+1>(OFFDATA.MUAfs/1000*str2num(get(findobj('Tag','minDurVal'),'String')));
             adjOFFStarts=adjOFFStarts(chooseOFF);
             adjOFFEnds=adjOFFEnds(chooseOFF);
 
 
             % Remove off-periods at start/end of recordings
-            minOFF=ceil(OFFDATA.PNEfs); maxOFF=length(OFFDATA.StartOP)-ceil(OFFDATA.PNEfs);
+            minOFF=ceil(OFFDATA.MUAfs); maxOFF=length(OFFDATA.StartOP)-ceil(OFFDATA.MUAfs);
             fullOFFindex=adjOFFStarts>minOFF&adjOFFStarts<maxOFF;
             adjOFFStarts=adjOFFStarts(fullOFFindex);
             adjOFFEnds=adjOFFEnds(fullOFFindex);
 
             % Get adjusted off-period durations (after threshold applied)
-            MSdurOP=(adjOFFEnds-adjOFFStarts+1)*(1/OFFDATA.PNEfs)*1000; %Off period length in MS
-            LFPdurOP=ceil(((adjOFFEnds-adjOFFStarts+1)*OFFDATA.LFPfs)/OFFDATA.PNEfs)-1;  %Off period length in LFP data points
+            MSdurOP=(adjOFFEnds-adjOFFStarts+1)*(1/OFFDATA.MUAfs)*1000; %Off period length in MS
+            LFPdurOP=ceil(((adjOFFEnds-adjOFFStarts+1)*OFFDATA.LFPfs)/OFFDATA.MUAfs)-1;  %Off period length in LFP data points
             clear adjOFFEnds
 
             numOFFPsamp=length(adjOFFStarts);
@@ -619,7 +619,7 @@ function drawOFFP(~,~)
                 % Extract OFF period associated LFP
                 for swSamp = 1:length(currIndex)
                     selectOP=sortOFFpos(currIndex(swSamp));
-                    LFPstart=round((adjOFFStarts(selectOP)/OFFDATA.PNEfs)*OFFDATA.LFPfs);
+                    LFPstart=round((adjOFFStarts(selectOP)/OFFDATA.MUAfs)*OFFDATA.LFPfs);
                     centeredOFFperiods(swSamp,:)=[LFPtmp.(OFFDATA.ChannelsFullName(swChan))(LFPstart-dispRangeLFPhalf:LFPstart+dispRangeLFPhalf)];    
                 end
                 avePercentileOFF(:,k)=mean(centeredOFFperiods);

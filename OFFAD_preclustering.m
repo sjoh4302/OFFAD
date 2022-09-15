@@ -37,9 +37,9 @@ importDataVar=importDataVar(end:-1:1);
 OFFDATA.datasetname=importDataVar(2).String;
 OFFDATA.VSpathin=importDataVar(4).String;
 OFFDATA.epochLen=double(string(importDataVar(7).String));
-OFFDATA.PNEpathin=importDataVar(9).String;
-OFFDATA.PNEfs=double(string(importDataVar(12).String));
-OFFDATA.PNEunit=importDataVar(14).String(importDataVar(14).Value);
+OFFDATA.MUApathin=importDataVar(9).String;
+OFFDATA.MUAfs=double(string(importDataVar(12).String));
+OFFDATA.MUAunit=importDataVar(14).String(importDataVar(14).Value);
 OFFDATA.LFPpathin=importDataVar(16).String;
 OFFDATA.LFPfs=double(string(importDataVar(19).String));
 OFFDATA.LFPunit=importDataVar(21).String(importDataVar(21).Value);
@@ -53,7 +53,7 @@ OFFDATA.clustVar2Smooth=double(string(importDataVar(34).String));
 OFFDATA.percSamp=double(string(importDataVar(36).String)); %percentage of signal to sample for cluster thresholding
 
 % Find names of MUA channels 
-exampleObject = matfile(OFFDATA.PNEpathin);
+exampleObject = matfile(OFFDATA.MUApathin);
 channelNums = who(exampleObject);
 channelNums = channelNums(find(contains(channelNums,'ch','IgnoreCase',true)));
 % Sort channels
@@ -168,31 +168,31 @@ channelValue=axesHandles(1).Value;
 if iscell(channelString)==0
     channelString={channelString};
 end
-PNE = load(OFFDATA.PNEpathin,'-mat',string(channelString(channelValue)));
-PNE = PNE.(string(channelString(channelValue)));
+MUA = load(OFFDATA.MUApathin,'-mat',string(channelString(channelValue)));
+MUA = MUA.(string(channelString(channelValue)));
 
 % Convert to uV
-if OFFDATA.PNEunit=="uV*1000000" 
-    PNE=PNE/1000000;
+if OFFDATA.MUAunit=="uV*1000000" 
+    MUA=MUA/1000000;
 end
 
 % Convert to lower memory data class if possible
-if class(PNE)=="single"
-    PNE = int16(PNE);
+if class(MUA)=="single"
+    MUA = int16(MUA);
 end
 
 % Return warning if incorrect amplitude detected
-if length(unique(PNE))<4
+if length(unique(MUA))<4
     warning('Wrong amplitude units specified')
     return
 end
 
 % Convert to absolute values
-PNE = abs(PNE);
+MUA = abs(MUA);
 
 % Create empty variables to store MUA signals from NREM only
-vsPNE=NaN(1,length(PNE)); %NaN vectors to be filled with pNe signal
-vsPNEtime=NaN(1,length(PNE)); %NaN vectors to be filled with recording time values
+vsMUA=NaN(1,length(MUA)); %NaN vectors to be filled with MUA signal
+vsMUAtime=NaN(1,length(MUA)); %NaN vectors to be filled with recording time values
 
 % Loop going through all NREM epochs (except for first and last)and extract MUA
 for ep = 1:numepochs
@@ -200,20 +200,20 @@ for ep = 1:numepochs
     Startepoch=cleanepochs(ep,1); %start of respective epoch
     Endepoch=cleanepochs(ep,2); %end of respective epoch
 
-    %fill NaN vectors with pNe signal for this NREM episode
-    StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.PNEfs);
-    EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.PNEfs);
+    %fill NaN vectors with MUA signal for this NREM episode
+    StartBin=ceil(Startepoch*OFFDATA.epochLen*OFFDATA.MUAfs);
+    EndBin=floor((Endepoch-1)*OFFDATA.epochLen*OFFDATA.MUAfs);
     try
-        vsPNE(StartBin:EndBin)=PNE(StartBin:EndBin);
-        vsPNEtime(StartBin:EndBin)=StartBin:EndBin;
+        vsMUA(StartBin:EndBin)=MUA(StartBin:EndBin);
+        vsMUAtime(StartBin:EndBin)=StartBin:EndBin;
     end
 
 end
 
 % Concatenate the signal from all selected NREM episodes to get rid of gaps
-vsPNE=vsPNE(~isnan(vsPNE));
-vsPNEtime=vsPNEtime(~isnan(vsPNEtime));
-clear PNE
+vsMUA=vsMUA(~isnan(vsMUA));
+vsMUAtime=vsMUAtime(~isnan(vsMUAtime));
+clear MUA
 
 
 
@@ -223,7 +223,7 @@ clear PNE
 if OFFDATA.clustVar1Select==1
     winSize=(OFFDATA.clustVar1Smooth*2)+1;
     w1=gausswin(winSize);
-    clusterVar1=conv(vsPNE,gausswin(winSize))/sum(w1);
+    clusterVar1=conv(vsMUA,gausswin(winSize))/sum(w1);
     if mod(winSize,2)==0
         clusterVar1=clusterVar1(winSize/2:end-winSize/2);
     else
@@ -233,7 +233,7 @@ if OFFDATA.clustVar1Select==1
 elseif OFFDATA.clustVar1Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar1,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
+    [clusterVar1,F] = offPeriodScalogram(vsMUA,OFFDATA.MUAfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
@@ -241,7 +241,7 @@ end
 if OFFDATA.clustVar2Select==1
     winSize=(OFFDATA.clustVar2Smooth*2)+1;
     w2=gausswin(winSize);
-    clusterVar2=conv(vsPNE,gausswin(winSize))/sum(w2);
+    clusterVar2=conv(vsMUA,gausswin(winSize))/sum(w2);
     if mod(winSize,2)==0
         clusterVar2=clusterVar2(winSize/2:end-winSize/2);
     else
@@ -251,7 +251,7 @@ if OFFDATA.clustVar2Select==1
 elseif OFFDATA.clustVar2Select==2
     percOverlap=10; %overlap between segments
     LB_freq=40; %find signal power from LB to fs/2
-    [clusterVar2,F] = offPeriodScalogram(vsPNE,OFFDATA.PNEfs,percOverlap,LB_freq);
+    [clusterVar2,F] = offPeriodScalogram(vsMUA,OFFDATA.MUAfs,percOverlap,LB_freq);
     clear LB_freq percOverlap F
 end
 
@@ -259,7 +259,7 @@ end
 % Cluster example data for histograms (0.1% sample of NREM data)
 
 % Select random NREM MUA data points
-randPoints=randi(length(clusterVar1),round(length(vigState)*4*OFFDATA.PNEfs*(1/1000)),1);
+randPoints=randi(length(clusterVar1),round(length(vigState)*4*OFFDATA.MUAfs*(1/1000)),1);
 sampCluster=[clusterVar1(randPoints)',clusterVar2(randPoints)'];
 allIDX=[];
 

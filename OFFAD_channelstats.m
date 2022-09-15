@@ -66,23 +66,23 @@ uicontrol(g.Channelstats,'Style', 'pushbutton','String',switchName,...
 'Callback',switchCallback,...
 'Position',[0.79 0.8 0.14 0.04])
 
-% Generate temporary variable to establish PNE length
-exampleObject = matfile(OFFDATA.PNEpathin);
-PNElength=size(exampleObject,OFFDATA.ChannelsFullName(1),2);
-PNEtimeTemp=[1/OFFDATA.PNEfs:1/OFFDATA.PNEfs:PNElength/OFFDATA.PNEfs]';
-clear PNElength exampleObject
+% Generate temporary variable to establish MUA length
+exampleObject = matfile(OFFDATA.MUApathin);
+MUAlength=size(exampleObject,OFFDATA.ChannelsFullName(1),2);
+MUAtimeTemp=[1/OFFDATA.MUAfs:1/OFFDATA.MUAfs:MUAlength/OFFDATA.MUAfs]';
+clear MUAlength exampleObject
 
 % Statistics 1: OFF period duration
 % Find duration of all OFF periods in recording for each channel (ms)
 OFFdurations=[];
 OFFdurationsID=[];
 for i = 1:length(OFFDATA.Channels)
-   start_end=[PNEtimeTemp(find(OFFDATA.(['Start',selectData])(:,i)==1)),...
-       PNEtimeTemp(find(OFFDATA.(['End',selectData])(:,i)==1))];
-   OFFdurations=[OFFdurations; (diff(start_end,1,2)+1/OFFDATA.PNEfs)*1000];
+   start_end=[MUAtimeTemp(find(OFFDATA.(['Start',selectData])(:,i)==1)),...
+       MUAtimeTemp(find(OFFDATA.(['End',selectData])(:,i)==1))];
+   OFFdurations=[OFFdurations; (diff(start_end,1,2)+1/OFFDATA.MUAfs)*1000];
    OFFdurationsID=[OFFdurationsID; repmat(OFFDATA.Channels(i),length(start_end),1)];
    %Store summary info
-   OFFDATA.(['Stats',selectData]).MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.PNEfs)*100);
+   OFFDATA.(['Stats',selectData]).MeanDuration(i,1)=mean((diff(start_end,1,2)+1/OFFDATA.MUAfs)*100);
    clear start_end
 end
 
@@ -92,9 +92,9 @@ end
 for i = 1:length(OFFDATA.Channels)
     display(['Calculating channel ',num2str(OFFDATA.Channels(i))])
     for j = 1:length(OFFDATA.Channels)
-       coherenceMat(i,j)=(length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,j))))...
+       coherenceMat(i,j)=(length(intersect(MUAtimeTemp(OFFDATA.(['All',selectData])(:,i)),MUAtimeTemp(OFFDATA.(['All',selectData])(:,j))))...
            /sum(OFFDATA.(['All',selectData])(:,i))...
-           +length(intersect(PNEtimeTemp(OFFDATA.(['All',selectData])(:,j)),PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))))...
+           +length(intersect(MUAtimeTemp(OFFDATA.(['All',selectData])(:,j)),MUAtimeTemp(OFFDATA.(['All',selectData])(:,i))))...
            /sum(OFFDATA.(['All',selectData])(:,j)))/2;
      end    
 end
@@ -111,7 +111,7 @@ OFFDATA.(['Stats',selectData]).OPnumber=full(sum(OFFDATA.(['Start',selectData]))
 
 % Statistics 4: OFF period occupancy
 % Find total time of spent in OFF state in recording for each channel (hours)
-OFFDATA.(['Stats',selectData]).OPoccupancy_time=hours(seconds(sum(OFFDATA.(['All',selectData])/OFFDATA.PNEfs)))';
+OFFDATA.(['Stats',selectData]).OPoccupancy_time=hours(seconds(sum(OFFDATA.(['All',selectData])/OFFDATA.MUAfs)))';
 
 % Statistics 5: LFP profile [OPTIONAL]
 % Find average amplitude of LFP associated with each OFF period per channel
@@ -138,8 +138,8 @@ try
          
          % Extract concommitant LFP during each MUA OFF period
          try
-             LFPampTmp=single(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
-                 +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))))';
+             LFPampTmp=single(sig(unique(round(mod(MUAtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
+                 +MUAtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))))';
              LFPampTmp=LFPampTmp(round(length(LFPampTmp)/2000):end-round(length(LFPampTmp)/2000)); %Ignore edge LFP filtering effects by using middle 99.9% of OFF periods
              LFPamp=[LFPamp;LFPampTmp];
              LFPampID=[LFPampID;repmat(OFFDATA.Channels(i),...
@@ -147,8 +147,8 @@ try
          end
          
          %Store summary info
-         OFFDATA.(['Stats',selectData]).MeanLFPamp(i,1)=mean(sig(unique(round(mod(PNEtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
-             +PNEtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))));
+         OFFDATA.(['Stats',selectData]).MeanLFPamp(i,1)=mean(sig(unique(round(mod(MUAtimeTemp(OFFDATA.(['All',selectData])(:,i)),1/OFFDATA.LFPfs)...
+             +MUAtimeTemp(OFFDATA.(['All',selectData])(:,i))/(1/OFFDATA.LFPfs)))));
         clear sig LFPampTmp
     end
 end    
@@ -241,7 +241,7 @@ end
 plotBG.Visible='on';
 
 % Clear temporary variables
-clear PNEtimeTemp
+clear MUAtimeTemp
 
 
 % Plot default graph (duration)
