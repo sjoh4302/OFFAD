@@ -2,7 +2,7 @@ function [OFFDATA]=OFFAD_clustering(OFFDATA)
 %
 % Clustering page: Perform clustering for OFF period detection 
 %
-% Author: Christian Harding 2022
+% Author: Christian Harding 2026
 % OFF Period Automated Detection (OFFAD) toolbox
 % christian.harding@sjc.ox.uk
 %
@@ -144,7 +144,7 @@ for chanNum = 1:length(OFFDATA.ChannelsFullName)
     cleanMUAtime=NaN(1,MUAlength); %NaN vectors to be filled with recording time values
 
     % Loop going through all epochs from all states (except for first and last)and extract MUA
-    states=["nr","w","r","mt"];
+    states=["nr","w","r","mt","la"];
     for st=1:length(states)
         vigState = load(OFFDATA.VSpathin,'-mat',states(st));
         vigState = vigState.(states(st));

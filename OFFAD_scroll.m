@@ -2,7 +2,7 @@ function OFFAD_scroll(OFFDATA);
 %
 % Scrolling page: View original signals with OFF/ON period detection results
 %
-% Author: Christian Harding 2022
+% Author: Christian Harding 2026
 % OFF Period Automated Detection (OFFAD) toolbox
 % christian.harding@sjc.ox.uk
 %
@@ -84,18 +84,20 @@ uicontrol(g.Scroll,'Style', 'popupmenu','String',{'Hypnogram','Average LFP'},...
 % Load vigilance state info (scored in epochs)
 allEpoch=categorical(nan(ceil(length(OFFDATA.StartOP)/OFFDATA.MUAfs/OFFDATA.epochLen),1));
 allCol=repmat([0,0,0],length(allEpoch),1);
-vigStateNames={'w','w1','mt','r','r3','nr','nr2','ma'};
+vigStateNames={'w','w1','mt','r','r3','nr','nr2','ma','la'};
 vigInf=load(OFFDATA.VSpathin,vigStateNames{:});
 
 % Assign each state a letter 
 allEpoch(vigInf.(vigStateNames{6}))='N'; allEpoch(vigInf.(vigStateNames{7}))='N'; %NREM
 allEpoch(vigInf.(vigStateNames{4}))='R'; allEpoch(vigInf.(vigStateNames{5}))='R'; %REM
 allEpoch(vigInf.(vigStateNames{1}))='W'; allEpoch(vigInf.(vigStateNames{2}))='W'; allEpoch(vigInf.(vigStateNames{3}))='W'; allEpoch(vigInf.(vigStateNames{8}))='W';%Wake
+allEpoch(vigInf.(vigStateNames{9}))='L'; %Low amplitude
 
 % Assign each state a color
 allCol(allEpoch=='W',1)=0; allCol(allEpoch=='W',2)=0.447; allCol(allEpoch=='W',3)=0.7410;
 allCol(allEpoch=='R',2)=0.7;
 allCol(allEpoch=='N',3)=0;
+allCol(allEpoch=='L',1)=0.3;
 
 % Plot hypnogram
 s1=subplot('Position',[0.12 0.84 0.72 0.14]);
@@ -113,6 +115,7 @@ allEpochFull=allEpoch;
 allEpochFull(allEpoch=='W')='WAKE';
 allEpochFull(allEpoch=='N')='NREM';
 allEpochFull(allEpoch=='R')='REM';
+allEpochFull(allEpoch=='L')='Low';
 
 % Display vigilance state of epoch in view
 uicontrol(g.Scroll,'Style', 'text','String',string(allEpochFull(1)),...
